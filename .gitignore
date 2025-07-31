@@ -1,0 +1,6 @@
+node_modules/
+logs/
+test.js
+.env
+package-lock.json
+tmpDownloads/
