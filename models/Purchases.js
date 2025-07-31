@@ -1,0 +1,41 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const PurchaseSchema = mongoose.Schema({
+    account_id: { type: Schema.Types.ObjectId, required: true, ref: 'Accounts' },
+    gr_number: { type: String, required: false },
+    transport_id: { type: Schema.Types.ObjectId, required: false, ref: 'Transport' },
+    product_id: { type: Schema.Types.ObjectId, required: true, ref: 'Product' },
+    purchase_date: { type: Date, required: true },
+    bill_date: { type: Date, required: true },
+    bill_no: { type: String, required: true },
+    mts: { type: Number, required: true },
+    short: { type: Number, required: true },
+    nett_mts: { type: Number, required: true },
+    rate: { type: Number, required: true },
+    gross: { type: Number, required: true },
+    discount_rate: { type: Number, required: true },
+    discount: { type: Number, required: true },
+    overhead: { type: Number, required: true },
+    less: { type: Number, required: true },
+    igst: { type: Number, required: true },
+    cgst: { type: Number, required: true },
+    sgst: { type: Number, required: true },
+    round: { type: Number, required: true },
+    purchase_amount: { type: Number, required: true },
+    goods_return: { type: Boolean, required: true , default: false },
+    goods_return_date: { type: String, required: false },
+    goods_return_summary: { type: String, required: false },
+    dispatched: { type: Boolean, required: true , default: false },
+    dispatched_date: { type: Date, required: false },
+    create_user_id: { type: Number, required: true },
+    change_user_id: { type: Number, required: true },
+    create_date: { type: Date, required: true },
+    change_date: { type: Date, required: true },
+    favour_id: { type: String, required: true },
+    grace_days: { type: Number, required: false },
+    received: { type: Boolean, required: true , default: false },
+    received_date: { type: Date, required: false },
+});
+
+module.exports = mongoose.model("purchase" , PurchaseSchema);
