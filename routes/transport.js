@@ -11,8 +11,8 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const transports = await Transports.find().sort({ transport_name: 1 });
-  //const transports = JSON.parse(filecontent("transports.json"));
+  //const transports = await Transports.find().sort({ transport_name: 1 });
+  const transports = JSON.parse(filecontent("transports.json"));
 
   if (transports.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No transport Found", { transports: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "transport Obtained Successfully", { transports: transports }));
