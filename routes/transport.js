@@ -3,7 +3,7 @@ const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Transports = require("../models/Transport");
-const filecontent = require("../utils/readFile");
+//const filecontent = require("../utils/readFile");
 
 function validation_schema() {
   const schema = Joi.object({ transport_id: Joi.objectId().optional(), transport_name: Joi.string().min(2).max(100).required() });
@@ -11,8 +11,8 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  //const transports = await Transports.find().sort({ transport_name: 1 });
-  const transports = JSON.parse(filecontent("transports.json"));
+  const transports = await Transports.find().sort({ transport_name: 1 });
+  //const transports = JSON.parse(filecontent("transports.json"));
 
   if (transports.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No transport Found", { transports: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "transport Obtained Successfully", { transports: transports }));
@@ -44,10 +44,10 @@ router.post("/", async (req, res) => {
   }
   const saveResult = await transport.save();
 
-  const tmpData = await Transports.find().sort({ transport_name: 1 });
-  fs.writeFile("./presets/transports.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
+  // const tmpData = await Transports.find().sort({ transport_name: 1 });
+  // fs.writeFile("./presets/transports.json", JSON.stringify(tmpData), (err) => {
+  //   if (err) throw err;
+  // });
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Transport saved successfully", { transport: saveResult }));
