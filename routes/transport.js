@@ -44,10 +44,10 @@ router.post("/", async (req, res) => {
   }
   const saveResult = await transport.save();
 
-  const tmpData = await Transports.find().sort({ transport_name: 1 });
-  fs.writeFile("./presets/transports.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
+  // const tmpData = await Transports.find().sort({ transport_name: 1 });
+  // fs.writeFile("./presets/transports.json", JSON.stringify(tmpData), (err) => {
+  //   if (err) throw err;
+  // });
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Transport saved successfully", { transport: saveResult }));
