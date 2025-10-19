@@ -21,6 +21,7 @@
     "moment": "^2.30.1",
     "mongodb": "4.1",
     "mongoose": "^7.3.0",
+    "node-cache": "^5.1.2",
     "nodemon": "^2.0.22",
     "sha256": "^0.2.0",
     "twilio": "^3.67.1"

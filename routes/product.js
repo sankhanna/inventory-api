@@ -1,9 +1,10 @@
+const NodeCache = require("node-cache");
 const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Products = require("../models/Product");
-const filecontent = require("../utils/readFile");
+const myCache = new NodeCache({ stdTTL: 3600 });
 
 function validation_schema() {
   const schema = Joi.object({ product_id: Joi.objectId().optional(), product_name: Joi.string().min(2).max(100).required(), product_group: Joi.string().min(2).max(100).required(), prefferd_product: Joi.boolean().required() });
@@ -11,10 +12,20 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  //const product = await Products.find().sort({ product_name: 1 });
-  const product = JSON.parse(filecontent("products.json"));
-  if (product.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No product Found", { products: [] }));
-  else return res.status(SUCCESS).send(addMarkup(1, "product Obtained Successfully", { products: product }));
+  let products;
+  const cacheKey = `data-products`;
+  const cachedData = myCache.get(cacheKey);
+  if (cachedData) {
+    console.log("Serving Products from cache:", cacheKey);
+    products = cachedData;
+  } else {
+    console.log("Refershing cache:", cacheKey);
+    products = await Products.find().sort({ product_name: 1 });
+    myCache.set(cacheKey, products);
+  }
+
+  if (products.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No product Found", { products: [] }));
+  else return res.status(SUCCESS).send(addMarkup(1, "product Obtained Successfully", { products }));
 });
 
 router.get("/productDetail/:id", async (req, res) => {
@@ -50,9 +61,7 @@ router.post("/", async (req, res) => {
     Product.change_user_id = req.headers.user_id;
   }
   const saveResult = await Product.save();
-
-  await WriteProducts();
-
+  myCache.flushAll();
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "product successfully", { product: saveResult }));
   } else {
@@ -89,18 +98,11 @@ router.delete("/:id", async (req, res) => {
 
   if (totalRecordFound == 0) {
     await Products.deleteOne({ _id: req.params.id });
-    await WriteProducts();
+    myCache.flushAll();
     return res.status(SUCCESS).send(addMarkup(1, "product deleted Successfully", { product: product }));
   } else {
     return res.status(BADREQUEST).send(addMarkup(1, "product is in use and cannot be deleted.", { product: product }));
   }
 });
-
-async function WriteProducts() {
-  const tmpData = await Products.find().sort({ product_name: 1 });
-  fs.writeFile("./presets/products.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
-}
 
 module.exports = router;
