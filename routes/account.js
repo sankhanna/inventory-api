@@ -1,10 +1,11 @@
+const NodeCache = require("node-cache");
 const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Accounts = require("../models/Accounts");
 const verifyID = require("../utils/verify");
-const filecontent = require("../utils/readFile");
+const myCache = new NodeCache({ stdTTL: 3600 });
 
 function validation_schema() {
   const schema = Joi.object({
@@ -25,20 +26,34 @@ function validation_schema() {
 
   return schema;
 }
+
+async function loadAccountsData() {
+  let accounts;
+
+  const cacheKey = `data-accounts`;
+  const cachedData = myCache.get(cacheKey);
+  if (cachedData) {
+    console.log("Serving accounts from cache:", cacheKey);
+    accounts = cachedData;
+  } else {
+    console.log("Refershing cache:", cacheKey);
+    accounts = await Accounts.find({}, { _id: 1, account_name: 1, account_group: 1 }).sort({ account_name: 1 });
+    myCache.set(cacheKey, accounts);
+  }
+  return accounts;
+}
 router.get("/:count", async (req, res) => {
-  //const accounts = await Accounts.find().sort({ account_name: 1 });
-  const accounts = JSON.parse(filecontent("accounts.json"));
+  const accounts = await loadAccountsData();
 
   if (accounts.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No accounts Found", { accounts: [] }));
-  else return res.status(SUCCESS).send(addMarkup(1, "accounts Obtained Successfully", { accounts: accounts }));
+  else return res.status(SUCCESS).send(addMarkup(1, "accounts Obtained Successfully", { accounts }));
 });
 
 router.get("/", async (req, res) => {
-  //const accounts = await Accounts.find({}, { _id: 1, account_name: 1, account_group: 1 }).sort({ account_name: 1 });
-  const accounts = JSON.parse(filecontent("accounts.json"));
+  const accounts = await loadAccountsData();
 
   if (accounts.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No accounts Found", { accounts: [] }));
-  else return res.status(SUCCESS).send(addMarkup(1, "accounts Obtained Successfully", { accounts: accounts }));
+  else return res.status(SUCCESS).send(addMarkup(1, "accounts Obtained Successfully", { accounts }));
 });
 
 router.get("/accountDetail/:id", async (req, res) => {
@@ -101,12 +116,7 @@ router.post("/", async (req, res) => {
       (account.state = result.value.state);
   }
   const saveResult = await account.save();
-
-  const tmpData = await Accounts.find().sort({ account_name: 1 });
-
-  fs.writeFile("./presets/accounts.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
+  myCache.flushAll();
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Account saved successfully", { account: saveResult }));

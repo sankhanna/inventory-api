@@ -4,7 +4,6 @@ const express = require("express");
 const router = express.Router();
 const City = require("../models/City");
 const verifyID = require("../utils/verify");
-const filecontent = require("../utils/readFile");
 
 function validation_schema() {
   const schema = Joi.object({ city_id: Joi.objectId().optional(), city_name: Joi.string().min(2).max(100).required() });
@@ -12,8 +11,7 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  //const city = await City.find().sort({ city_name: 1 });
-  const city = JSON.parse(filecontent("city.json"));
+  const city = await City.find().sort({ city_name: 1 });
 
   if (city.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No City Found", { city: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "City Obtained Successfully", { city: city }));
@@ -46,11 +44,6 @@ router.post("/", async (req, res) => {
     city.change_user_id = req.headers.user_id;
   }
   const saveResult = await city.save();
-
-  const tmpData = await City.find().sort({ city_name: 1 });
-  fs.writeFile("./presets/city.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "City successfully", { city: saveResult }));
