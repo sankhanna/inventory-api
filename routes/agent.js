@@ -3,7 +3,6 @@ const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Agents = require("../models/Agents");
-const filecontent = require("../utils/readFile");
 
 function validation_schema() {
   const schema = Joi.object({ agent_id: Joi.objectId().optional(), agent_name: Joi.string().min(2).max(100).required() });
@@ -11,8 +10,7 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  //const agents = await Agents.find().sort({ agent_name: 1 });
-  const agents = JSON.parse(filecontent("agents.json"));
+  const agents = await Agents.find().sort({ agent_name: 1 });
 
   if (agents.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No agent Found", { agents: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "agent Obtained Successfully", { agents: agents }));
@@ -43,12 +41,6 @@ router.post("/", async (req, res) => {
     agent.agent_name = result.value.agent_name;
   }
   const saveResult = await agent.save();
-
-  const tmpData = await Agents.find().sort({ agent_name: 1 });
-
-  fs.writeFile("./presets/agents.json", JSON.stringify(tmpData), (err) => {
-    if (err) throw err;
-  });
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Agent saved successfully", { agent: saveResult }));
