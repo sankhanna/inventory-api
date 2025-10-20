@@ -71,45 +71,113 @@ router.get("/MaterialReceiptDetail/:id", async (req, res) => {
 router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => {
   if (verifyID(req.params.productID) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { materialreceipts: [] }));
 
-  const products = await Products.find();
+  // const materialreceipt = await MaterialReceipts.find({ workshop_id: req.params.wareHouse, transactions: { $elemMatch: { product_id: req.params.productID } } });
 
-  const materialreceipt = await MaterialReceipts.find({ workshop_id: req.params.wareHouse, transactions: { $elemMatch: { product_id: req.params.productID } } });
-  //const materialissue = await MaterialIssue.find().sort({ _id: 1 });
+  // let receipt_total = 0;
+  // let all_records = [];
+  // materialreceipt.map((item) => {
+  //   transactions = item.transactions;
+  //   transactions.map((itm) => {
+  //     if (CO(itm.product_id) == CO(req.params.productID)) {
+  //       all_records.push({ _id: itm._id, product_id: itm.product_id, transaction_date: item.transaction_date, batch_no: itm.batch_no, nett_qty: itm.nett_qty, already_issued: 0, balance: itm.nett_qty, value: itm.value });
+  //       receipt_total += itm.nett_qty;
+  //     }
+  //   });
+  // });
 
-  let receipt_total = 0;
-  let all_records = [];
-  materialreceipt.map((item) => {
-    transactions = item.transactions;
-    transactions.map((itm) => {
-      if (CO(itm.product_id) == CO(req.params.productID)) {
-        all_records.push({ _id: itm._id, product_id: itm.product_id, transaction_date: item.transaction_date, batch_no: itm.batch_no, nett_qty: itm.nett_qty, already_issued: 0, balance: itm.nett_qty, value: itm.value });
-        receipt_total += itm.nett_qty;
-      }
-    });
-  });
+  // let issue_total = 0;
+  // let records = [];
+  // await Promise.all(
+  //   all_records.map(async (item) => {
+  //     let total_issued = 0;
+  //     const materialissue = await MaterialIssue.find({ transactions: { $elemMatch: { material_receipt_ref_id: item._id } } }).sort({ _id: 1 });
+  //     materialissue.map((ite) => {
+  //       let transactions = ite.transactions;
+  //       transactions.map((itm) => {
+  //         if (CO(itm.material_receipt_ref_id) == CO(item._id)) {
+  //           total_issued += itm.nett_qty;
+  //         }
+  //       });
+  //     });
+  //     item.already_issued = total_issued;
+  //     item.balance = item.nett_qty - item.already_issued;
+  //     issue_total += item.already_issued;
+  //     records.push(item);
+  //   })
+  // );
 
-  let issue_total = 0;
-  let records = [];
-  await Promise.all(
-    all_records.map(async (item) => {
-      let total_issued = 0;
-      const materialissue = await MaterialIssue.find({ transactions: { $elemMatch: { material_receipt_ref_id: item._id } } }).sort({ _id: 1 });
-      materialissue.map((ite) => {
-        let transactions = ite.transactions;
-        transactions.map((itm) => {
-          //&& CO(itm.product_id) == CO(req.params.productID)
-          if (CO(itm.material_receipt_ref_id) == CO(item._id)) {
-            total_issued += itm.nett_qty;
-          }
-        });
-      });
-      item.already_issued = total_issued;
-      item.balance = item.nett_qty - item.already_issued;
-      issue_total += item.already_issued;
-      records.push(item);
-      //return item;
-    })
-  );
+  const records = MaterialReceipts.aggregate([
+    {
+      $match: {
+        workshop_id: req.params.wareHouse, // pass your workshop_id here
+      },
+    },
+    {
+      $unwind: "$transactions",
+    },
+    {
+      $match: {
+        "transactions.product_id": req.params.productID,
+      },
+    },
+    {
+      $lookup: {
+        from: "materialissues",
+        let: {
+          receipt_transaction_id: "$transactions._id",
+        },
+        pipeline: [
+          {
+            $unwind: "$transactions",
+          },
+          {
+            $match: {
+              $expr: {
+                $eq: ["$transactions.material_receipt_ref_id", "$$receipt_transaction_id"],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: "$transactions.material_receipt_ref_id",
+              total_issued_qty: { $sum: "$transactions.qty" },
+            },
+          },
+        ],
+        as: "issued_data",
+      },
+    },
+    {
+      $project: {
+        _id: "$transactions._id",
+        product_id: "$transactions.product_id",
+        transaction_date: "$transaction_date",
+        batch_no: "$transactions.batch_no",
+        nett_qty: "$transactions.nett_qty",
+        already_issued: {
+          $ifNull: [{ $arrayElemAt: ["$issued_data.total_issued_qty", 0] }, 0],
+        },
+        value: "$transactions.value",
+      },
+    },
+    {
+      $addFields: {
+        balance: {
+          $subtract: ["$nett_qty", "$already_issued"],
+        },
+      },
+    },
+    {
+      $match: {
+        balance: { $gt: 0 },
+      },
+    },
+    {
+      $sort: {
+        transaction_date: 1,
+      },
+    },
+  ]);
 
   return res.status(SUCCESS).send(addMarkup(1, "material receipt entry Obtained", { materialreceipts: records }));
 });
