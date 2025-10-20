@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
     products = cachedData;
   } else {
     console.log("Refershing cache:", cacheKey);
-    products = await Products.find().sort({ product_name: 1 });
+    products = await Products.find({}, { _id: 1, product_name: 1, product_group: 1, prefferd_product: 1 }).sort({ product_name: 1 });
     myCache.set(cacheKey, products);
   }
 
