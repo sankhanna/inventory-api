@@ -106,7 +106,7 @@ router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => 
   //   })
   // );
 
-  const records = MaterialReceipts.aggregate([
+  const records = await MaterialReceipts.aggregate([
     {
       $match: {
         workshop_id: req.params.wareHouse, // pass your workshop_id here
