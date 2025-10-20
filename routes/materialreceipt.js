@@ -12,6 +12,7 @@ const findProductName = require("../services/findProductName");
 const findWorkshopName = require("../services/findWorkshopName");
 const readFile = require("../utils/readFile");
 const findUserName = require("../services/findUserName");
+const mongoose = require("mongoose");
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -109,7 +110,7 @@ router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => 
   const records = await MaterialReceipts.aggregate([
     {
       $match: {
-        workshop_id: req.params.wareHouse, // pass your workshop_id here
+        workshop_id: Number(req.params.wareHouse), // pass your workshop_id here
       },
     },
     {
@@ -117,7 +118,7 @@ router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => 
     },
     {
       $match: {
-        "transactions.product_id": req.params.productID,
+        "transactions.product_id": new mongoose.Types.ObjectId(req.params.productID),
       },
     },
     {
