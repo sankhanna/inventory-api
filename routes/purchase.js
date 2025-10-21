@@ -109,6 +109,7 @@ router.get("/", async (req, res) => {
     { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
     { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
     { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
+    { $lookup: { from: "agents", localField: "account.agent_id", foreignField: "_id", as: "agent" } },
     { $unwind: { path: "$account", preserveNullAndEmptyArrays: false } },
     { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
@@ -134,6 +135,7 @@ router.get("/", async (req, res) => {
         "account.account_name": 1,
         "transport.transport_name": 1,
         "product.product_name": 1,
+        "agent.agent_name": 1,
       },
     },
     { $sort: { bill_date: 1 } },
@@ -143,24 +145,11 @@ router.get("/", async (req, res) => {
 
   let purchases = await Purchases.aggregate(pipeline);
 
-  // if (filter_agent_id != "") {
-  //   records = [];
-  //   records = purchases.filter((item) => {
-  //     let account_obj = findAccountObj(accounts, item.account_id);
-  //     if (JSON.stringify(account_obj.agent_id) == JSON.stringify(filter_agent_id)) {
-  //       return item;
-  //     }
-  //   });
-  //   purchases = records;
-  // }
-
   if (hide_goods_return == "1") {
     records = [];
     records = purchases.filter((item) => item.goods_return == false || item.goods_return == undefined);
     purchases = records;
   }
-
-  //console.log("Started = " + Date.now() + " Records to process = " + purchases.length);
 
   records = [];
 
@@ -170,7 +159,10 @@ router.get("/", async (req, res) => {
     let change_user_name = findUserAbbr(users, item.change_user_id);
     let create_user_name = findUserAbbr(users, item.create_user_id);
 
-    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
+    let agentName = "";
+    if (item.agent.length) agentName = item.agent[0].agent_name;
+
+    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, agentName, item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
     records.push(nitem);
   }
 
