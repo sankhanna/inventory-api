@@ -3,13 +3,9 @@ const express = require("express");
 const router = express.Router();
 const Purchases = require("../models/Purchases");
 const verifyID = require("../utils/verify");
-const findAccountName = require("../services/findAccountName");
-const findTransportName = require("../services/findTransportName");
-const findProductName = require("../services/findProductName");
 const readFile = require("../utils/readFile");
 const findUserName = require("../services/findUserName");
 const findUserAbbr = require("../services/findUserAbbr");
-const findAgentName = require("../services/findAgentName");
 const findAccountObj = require("../services/findAccountObj");
 const { getDate, dynamicSort } = require("../services/commonFunctions");
 const filecontent = require("../utils/readFile");
@@ -107,7 +103,42 @@ router.get("/", async (req, res) => {
     filter = { ...filter, account_id: { $in: accountIds } };
   }
 
-  let purchases = await Purchases.find({ ...filter }).sort({ bill_date: 1 });
+  const pipeline = [
+    { $match: filter },
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
+    { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: false } },
+    { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
+    {
+      $project: {
+        bill_no: 1,
+        bill_date: 1,
+        purchase_date: 1,
+        purchase_amount: 1,
+        nett_mts: 1,
+        mts: 1,
+        rate: 1,
+        igst: 1,
+        cgst: 1,
+        sgst: 1,
+        goods_return: 1,
+        goods_return_date: 1,
+        goods_return_summary: 1,
+        favour_id: 1,
+        gr_number: 1,
+        "account.account_name": 1,
+        "transport.transport_name": 1,
+        "product.product_name": 1,
+      },
+    },
+    { $sort: { bill_date: 1 } },
+  ];
+
+  //let purchases = await Purchases.find({ ...filter }).sort({ bill_date: 1 });
+
+  let purchases = await Purchases.aggregate(pipeline);
 
   // if (filter_agent_id != "") {
   //   records = [];
@@ -132,35 +163,11 @@ router.get("/", async (req, res) => {
 
   for (let counter = 0; counter < purchases.length; counter++) {
     const item = purchases[counter];
-    let account_name = "";
-    let agentId = "";
-    let product_name = "";
-    let transportName = "";
-    let agent_name = "";
-
-    const accountsObjPromise = AccountsModel.findOne({ _id: item.account_id });
-    const productObjPromise = ProductsModel.findOne({ _id: item.product_id });
-    const transportObjPromise = TransportsModel.findOne({ _id: item.transport_id });
-
-    const [AccountsObj, ProductObj, TransportObj] = await Promise.all([accountsObjPromise, productObjPromise, transportObjPromise]);
-    if (AccountsObj) {
-      account_name = AccountsObj.account_name;
-      agentId = AccountsObj.agent_id;
-    }
-
-    if (ProductObj) product_name = ProductObj.product_name;
-
-    if (agentId) {
-      const AgentObj = await AgentsModel.findOne({ _id: agentId });
-      if (AgentObj) agent_name = AgentObj.agent_name;
-    }
-
-    if (TransportObj) transportName = TransportObj.transport_name;
 
     let change_user_name = findUserAbbr(users, item.change_user_id);
     let create_user_name = findUserAbbr(users, item.create_user_id);
 
-    const nitem = formatPurchase(item, transportName, account_name, agent_name, product_name, change_user_name, item.change_date, create_user_name, item.create_date);
+    const nitem = formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
     records.push(nitem);
   }
 
@@ -180,15 +187,31 @@ router.get("/transitPurchase", async (req, res) => {
   let dispatch_date = req.query.dispatch_date;
   let hide_already_received = req.query.hide_already_received;
 
-  let filter = {},
-    records = [];
+  let filter = { dispatched: true };
+  let records = [];
 
   if (filter_account_id != "null" && filter_account_id != "") filter = { ...filter, account_id: filter_account_id };
   if (filter_product_id != "null" && filter_product_id != "") filter = { ...filter, product_id: filter_product_id };
   if (filter_favour_id != "null" && filter_favour_id != "") filter = { ...filter, favour_id: filter_favour_id };
   if (hide_already_received == "1") filter = { ...filter, received: false };
 
-  let purchases = await Purchases.find({ dispatched: true, ...filter }).sort({ dispatched_date: 1 });
+  const pipeline = [
+    { $match: filter },
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
+    { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: false } },
+    { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
+    {
+      $project: { bill_no: 1, purchase_date: 1, purchase_amount: 1, nett_mts: 1, mts: 1, favour_id: 1, account_id: 1, transport_id: 1, product_id: 1, gr_number: 1, "account.account_name": 1, "transport.transport_name": 1, "product.product_name": 1 },
+    },
+    { $sort: { dispatch_date: 1 } },
+  ];
+
+  // let purchases = await Purchases.find({ dispatched: true, ...filter }).sort({ dispatched_date: 1 });
+
+  let purchases = await Purchases.aggregate(pipeline);
 
   if (dispatch_date != "") {
     records = [];
@@ -202,29 +225,15 @@ router.get("/transitPurchase", async (req, res) => {
     purchases = records;
   }
 
-  const agents = await AgentsModel.find();
-  const accounts = await AccountsModel.find();
-  const products = await ProductsModel.find();
-  const transports = await TransportsModel.find();
-
-  //const agents = JSON.parse(filecontent("agents.json"));
-  //const transports = JSON.parse(filecontent("transports.json"));
-  //const accounts = JSON.parse(filecontent("accounts.json"));
-  //const products = JSON.parse(filecontent("products.json"));
   const tmpData = readFile("../presets/users.json");
   const users = JSON.parse(tmpData);
 
   records = [];
   records = purchases.map((item) => {
-    transport_name = findTransportName(transports, item.transport_id);
-    account_name = findAccountName(accounts, item.account_id);
-    product_name = findProductName(products, item.product_id);
-    agent_name = findAgentName(accounts, agents, item.account_id); //from the account finding agent and then searching further
-
     change_user_name = findUserName(users, item.change_user_id);
     create_user_name = findUserName(users, item.create_user_id);
 
-    const nitem = formatPurchase(item, transport_name, account_name, agent_name, product_name, change_user_name, item.change_date, create_user_name, item.create_date);
+    const nitem = formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
   });
 
