@@ -13,6 +13,7 @@ const AccountsModel = require("../models/Accounts");
 const ProductsModel = require("../models/Product");
 const AgentsModel = require("../models/Agents");
 const TransportsModel = require("../models/Transport");
+const mongoose = require("mongoose");
 
 function purchase_validation_schema() {
   const schema = Joi.object({
@@ -79,7 +80,7 @@ router.get("/", async (req, res) => {
     agentCustomer.map((customer) => accountIds.push(customer._id.toString()));
   }
 
-  if (filter_product_id != "" && filter_account_id != "null") filter = { ...filter, product_id: filter_product_id };
+  if (filter_product_id != "" && filter_account_id != "null") filter = { ...filter, product_id: new mongoose.Types.ObjectId(filter_product_id) };
   if (filter_favour_id != "" && filter_favour_id != "null") filter = { ...filter, favour_id: filter_favour_id };
   if (hide_already_dispatched == "1") filter = { ...filter, dispatched: false };
   if (hide_goods_return == "1") filter = { ...filter, $or: [{ goods_return: false }, { goods_return: { $exists: false } }] };
@@ -100,7 +101,7 @@ router.get("/", async (req, res) => {
   }
 
   if (accountIds.length > 0) {
-    filter = { ...filter, account_id: { $in: accountIds } };
+    filter = { ...filter, account_id: { $in: accountIds.map((account) => new mongoose.Types.ObjectId(account)) } };
   }
 
   const pipeline = [
@@ -128,6 +129,8 @@ router.get("/", async (req, res) => {
         goods_return_summary: 1,
         favour_id: 1,
         gr_number: 1,
+        discount_rate: 1,
+        discount: 1,
         "account.account_name": 1,
         "transport.transport_name": 1,
         "product.product_name": 1,
@@ -167,7 +170,7 @@ router.get("/", async (req, res) => {
     let change_user_name = findUserAbbr(users, item.change_user_id);
     let create_user_name = findUserAbbr(users, item.create_user_id);
 
-    const nitem = formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
+    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
     records.push(nitem);
   }
 
