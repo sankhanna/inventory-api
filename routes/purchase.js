@@ -53,7 +53,8 @@ function purchase_validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const accounts = JSON.parse(filecontent("accounts.json"));
+  //const accounts = JSON.parse(filecontent("accounts.json"));
+  const accounts = await AccountsModel.find({});
   const tmpData = readFile("../presets/users.json");
   const users = JSON.parse(tmpData);
 
@@ -201,10 +202,15 @@ router.get("/transitPurchase", async (req, res) => {
     purchases = records;
   }
 
-  const agents = JSON.parse(filecontent("agents.json"));
-  const transports = JSON.parse(filecontent("transports.json"));
-  const accounts = JSON.parse(filecontent("accounts.json"));
-  const products = JSON.parse(filecontent("products.json"));
+  const agents = await AgentsModel.find();
+  const accounts = await AccountsModel.find();
+  const products = await ProductsModel.find();
+  const transports = await TransportsModel.find();
+
+  //const agents = JSON.parse(filecontent("agents.json"));
+  //const transports = JSON.parse(filecontent("transports.json"));
+  //const accounts = JSON.parse(filecontent("accounts.json"));
+  //const products = JSON.parse(filecontent("products.json"));
   const tmpData = readFile("../presets/users.json");
   const users = JSON.parse(tmpData);
 

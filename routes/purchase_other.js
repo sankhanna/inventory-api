@@ -135,13 +135,14 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   if (verifyID(req.params.id) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { PurchaseOther: {} }));
 
-  const transports = JSON.parse(filecontent("transports.json"));
-  const accounts = JSON.parse(filecontent("accounts.json"));
-  const products = JSON.parse(filecontent("products.json"));
+  console.log("Hello");
+  // const transports = JSON.parse(filecontent("transports.json"));
+  // const accounts = JSON.parse(filecontent("accounts.json"));
+  // const products = JSON.parse(filecontent("products.json"));
 
-  //const accounts = await Accounts.find();
-  //const products = await Products.find();
-  //const transports = await Transport.find();
+  const accounts = await Accounts.find();
+  const products = await Products.find();
+  const transports = await Transport.find();
   const tmpData = readFile("../presets/users.json");
   const users = JSON.parse(tmpData);
 

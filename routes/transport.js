@@ -1,10 +1,9 @@
-const NodeCache = require("node-cache");
 const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Transports = require("../models/Transport");
-const myCache = new NodeCache({ stdTTL: 3600 });
+const cacheService = require("../services/cache");
 
 function validation_schema() {
   const schema = Joi.object({ transport_id: Joi.objectId().optional(), transport_name: Joi.string().min(2).max(100).required() });
@@ -12,21 +11,10 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  let transports;
-
-  const cacheKey = `data-transport`;
-  const cachedData = myCache.get(cacheKey);
-  if (cachedData) {
-    console.log("Serving transport from cache:", cacheKey);
-    transports = cachedData;
-  } else {
-    console.log("Refershing cache:", cacheKey);
-    transports = await Transports.find().sort({ transport_name: 1 });
-    myCache.set(cacheKey, transports);
-  }
+  const transports = await cacheService.transportCache();
 
   if (transports.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No transport Found", { transports: [] }));
-  else return res.status(SUCCESS).send(addMarkup(1, "transport Obtained Successfully", { transports: transports }));
+  else return res.status(SUCCESS).send(addMarkup(1, "transport Obtained Successfully", { transports }));
 });
 
 router.get("/transportDetail/:id", async (req, res) => {
@@ -54,7 +42,7 @@ router.post("/", async (req, res) => {
     transport.create_user_id = req.headers.user_id;
   }
   const saveResult = await transport.save();
-  myCache.flushAll();
+  await cacheService.clearTransportCache();
   console.log("Entire cache flushed.");
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Transport saved successfully", { transport: saveResult }));
