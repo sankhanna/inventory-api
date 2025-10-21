@@ -1,16 +1,11 @@
+const mongoose = require("mongoose");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const PO = require("../models/Purchases_other");
 const verifyID = require("../utils/verify");
-const Accounts = require("../models/Accounts");
-const Products = require("../models/Product");
-const findAccountName = require("../services/findAccountName");
-const findProductName = require("../services/findProductName");
 const readFile = require("../utils/readFile");
 const findUserName = require("../services/findUserName");
-const findTransportName = require("../services/findTransportName");
-const Transport = require("../models/Transport");
 const filecontent = require("../utils/readFile");
 
 function validation_schema() {
@@ -57,6 +52,77 @@ function validation_schema() {
   return schema;
 }
 
+const _getPurchaseOtherPipeline = (filter) => {
+  const pipeline = [
+    { $match: filter },
+
+    { $lookup: { from: "products", localField: "transactions.product_id", foreignField: "_id", as: "product_details" } },
+    { $unwind: { path: "$product_info", preserveNullAndEmptyArrays: true } },
+
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "accounts", localField: "purchase_type", foreignField: "_id", as: "purchasetype" } },
+    { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
+
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$purchasetype", preserveNullAndEmptyArrays: true } },
+    {
+      $addFields: {
+        transactions: {
+          $map: {
+            input: "$transactions",
+            as: "transaction",
+            in: {
+              $mergeObjects: [
+                "$$transaction",
+                {
+                  product_name: {
+                    $arrayElemAt: [
+                      "$product_details.product_name",
+                      {
+                        $indexOfArray: ["$product_details._id", "$$transaction.product_id"],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        purchase_type: 1,
+        purchase_date: 1,
+        bill_no: 1,
+        bill_date: 1,
+        gr_no: 1,
+        gr_date: 1,
+        nob: 1,
+        transactions: 1,
+        bill_amount: 1,
+        igst: 1,
+        cgst: 1,
+        sgst: 1,
+        total_amount: 1,
+        discount: 1,
+        tcs: 1,
+        round_off: 1,
+        create_user_id: 1,
+        change_user_id: 1,
+        create_date: 1,
+        change_date: 1,
+        "account.account_name": 1,
+        "transport.transport_name": 1,
+        "purchasetype.account_name": 1,
+      },
+    },
+    { $sort: { purchase_date: -1 } },
+  ];
+  return pipeline;
+};
+
 router.get("/", async (req, res) => {
   let filter_purchase_type = req.query.filter_purchase_type;
   let filter_account_id = req.query.filter_account_id;
@@ -64,67 +130,31 @@ router.get("/", async (req, res) => {
   let start_date = req.query.start_date;
   let end_date = req.query.end_date;
 
-  const accounts = await Accounts.find();
-  const products = await Products.find();
-  const transports = await Transport.find();
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = JSON.parse(readFile("../presets/users.json"));
 
   let filter = {};
-  if (filter_purchase_type != "") filter = { ...filter, purchase_type: filter_purchase_type };
-  if (filter_account_id != "") filter = { ...filter, account_id: filter_account_id };
+  if (filter_purchase_type != "") filter = { ...filter, purchase_type: new mongoose.Types.ObjectId(filter_purchase_type) };
+  if (filter_account_id != "") filter = { ...filter, account_id: new mongoose.Types.ObjectId(filter_account_id) };
+  if (filter_department_id != "") filter = { ...filter, "transactions.department_id": filter_department_id };
 
   if (start_date != "" && end_date != "") {
-    // records = [];
-    // records = PurchaseOther.filter((item) => {
-    //   return item.purchase_date >= new Date(start_date) && item.purchase_date <= new Date(end_date);
-    // });
-    // PurchaseOther = records;
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    endDate.setHours(23, 59, 59, 999);
 
-    let date_filter = { purchase_date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
-
+    let date_filter = { purchase_date: { $gte: startDate, $lte: endDate } };
     filter = { ...filter, ...date_filter };
   }
 
-  let PurchaseOther = await PO.find({ ...filter }).sort({ purchase_date: -1 });
-
-  //   if (filter_purchase_type != "") {
-  //     records = [];
-  //     records = PurchaseOther.filter((item) => JSON.stringify(item.purchase_type) == JSON.stringify(filter_purchase_type));
-  //     PurchaseOther = records;
-  //   }
-
-  //   if (filter_account_id != "") {
-  //     records = [];
-  //     records = PurchaseOther.filter((item) => JSON.stringify(item.account_id) == JSON.stringify(filter_account_id));
-  //     PurchaseOther = records;
-  //   }
-
-  if (filter_department_id != "") {
-    records = [];
-    records = PurchaseOther.filter((item) => {
-      has_department_entries = false;
-      item.transactions.map((i) => {
-        if (i.department_id == filter_department_id) {
-          has_department_entries = true;
-        }
-      });
-      if (has_department_entries) {
-        return item;
-      }
-    });
-    PurchaseOther = records;
-  }
+  const pipeLine = _getPurchaseOtherPipeline(filter);
+  let PurchaseOther = await PO.aggregate(pipeLine);
 
   records = [];
   records = PurchaseOther.map((item) => {
-    purchase_type_name = findAccountName(accounts, item.purchase_type);
-    account_name = findAccountName(accounts, item.account_id);
-    transport_name = findTransportName(transports, item.transport_id);
     change_user_name = findUserName(users, item.change_user_id);
     create_user_name = findUserName(users, item.create_user_id);
 
-    const nitem = formatPurchaseOtherRow(item, products, purchase_type_name, account_name, transport_name, change_user_name, item.change_date, create_user_name, item.create_date, filter_department_id);
+    const nitem = formatPurchaseOtherRow(item, item.purchasetype?.account_name, item.account?.account_name, item.transport?.transport_name, change_user_name, item.change_date, create_user_name, item.create_date, filter_department_id);
 
     return nitem;
   });
@@ -135,27 +165,18 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   if (verifyID(req.params.id) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { PurchaseOther: {} }));
 
-  console.log("Hello");
-  // const transports = JSON.parse(filecontent("transports.json"));
-  // const accounts = JSON.parse(filecontent("accounts.json"));
-  // const products = JSON.parse(filecontent("products.json"));
+  const users = JSON.parse(readFile("../presets/users.json"));
 
-  const accounts = await Accounts.find();
-  const products = await Products.find();
-  const transports = await Transport.find();
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const filter = { _id: new mongoose.Types.ObjectId(req.params.id) };
+  const pipeLine = _getPurchaseOtherPipeline(filter);
 
-  let item = await PO.findOne({ _id: req.params.id });
-  if (item == null) return res.status(BADREQUEST).send(addMarkup(0, "entry not found", { PurchaseOther: {} }));
+  let item = await PO.aggregate(pipeLine);
+  if (!item.length) return res.status(BADREQUEST).send(addMarkup(0, "entry not found", { PurchaseOther: {} }));
 
-  purchase_type_name = findAccountName(accounts, item.purchase_type);
-  account_name = findAccountName(accounts, item.account_id);
-  transport_name = findTransportName(transports, item.transport_id);
   change_user_name = findUserName(users, item.change_user_id);
   create_user_name = findUserName(users, item.create_user_id);
 
-  const nitem = formatPurchaseOtherRow(item, products, purchase_type_name, account_name, transport_name, change_user_name, item.change_date, create_user_name, item.create_date, 0);
+  const nitem = formatPurchaseOtherRow(item[0], item.purchasetype?.account_name, item.account?.account_name, item.transport?.transport_name, change_user_name, item.change_date, create_user_name, item.create_date, 0);
   return res.status(SUCCESS).send(addMarkup(1, "material issue entry Obtained Successfully", { PurchaseOther: nitem }));
 });
 
@@ -290,84 +311,18 @@ router.post("/", async (req, res) => {
   else return res.status(BADREQUEST).send(addMarkup(0, "Could not save material issue", { PurchaseOther: {} }));
 });
 
-function formatPurchaseOtherRow(item, products, purchase_type_name, account_name, transport_name, change_user_name, change_date, create_user_name, create_date, filter_department_id) {
-  trn = [];
-  transactions = item.transactions;
-  transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
+function formatPurchaseOtherRow(item, purchase_type_name, account_name, transport_name, change_user_name, change_date, create_user_name, create_date, filter_department_id) {
+  let trn = [];
+  item.transactions.map((tm) => {
     if (filter_department_id != "") {
       if (tm.department_id == filter_department_id) {
-        trn.push({
-          _id: tm._id,
-          product_id: tm.product_id,
-          product_name,
-          department_id: tm.department_id,
-          pcs: tm.pcs,
-          qty: tm.qty,
-          rate: tm.rate,
-          value: tm.value,
-          discount_percent: tm.discount_percent,
-          discount: tm.discount,
-          igst_rate: tm.igst_rate,
-          cgst_rate: tm.cgst_rate,
-          sgst_rate: tm.sgst_rate,
-          igst: tm.igst,
-          cgst: tm.cgst,
-          sgst: tm.sgst,
-        });
+        trn.push({ ...tm });
       }
     } else {
-      trn.push({
-        _id: tm._id,
-        product_id: tm.product_id,
-        product_name,
-        department_id: tm.department_id,
-        pcs: tm.pcs,
-        qty: tm.qty,
-        rate: tm.rate,
-        value: tm.value,
-        discount_percent: tm.discount_percent,
-        discount: tm.discount,
-        igst_rate: tm.igst_rate,
-        cgst_rate: tm.cgst_rate,
-        sgst_rate: tm.sgst_rate,
-        igst: tm.igst,
-        cgst: tm.cgst,
-        sgst: tm.sgst,
-      });
+      trn.push({ ...tm });
     }
   });
-
-  const it = {
-    _id: item._id,
-    purchase_type: item.purchase_type,
-    purchase_type_name,
-    purchase_date: item.purchase_date,
-    bill_date: item.bill_date,
-    account_id: item.account_id,
-    account_name,
-    bill_no: item.bill_no,
-    gr_no: item.gr_no,
-    gr_date: item.gr_date,
-    transport_id: item.transport_id,
-    transport_name,
-    nob: item.nob,
-    transactions: item.transactions,
-    bill_amount: item.bill_amount,
-    igst: item.igst,
-    cgst: item.cgst,
-    sgst: item.sgst,
-    tcs: item.tcs,
-    round_off: item.round_off,
-    total_amount: item.total_amount,
-    discount: item.discount,
-    change_user_name,
-    change_date,
-    create_user_name,
-    create_date,
-    transactions: trn,
-  };
-
+  const it = { ...item, purchase_type_name, account_name, transport_name, change_user_name, change_date, create_user_name, create_date, transactions: trn };
   return it;
 }
 

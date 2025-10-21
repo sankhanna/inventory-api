@@ -10,9 +10,6 @@ const findAccountObj = require("../services/findAccountObj");
 const { getDate, dynamicSort } = require("../services/commonFunctions");
 const filecontent = require("../utils/readFile");
 const AccountsModel = require("../models/Accounts");
-const ProductsModel = require("../models/Product");
-const AgentsModel = require("../models/Agents");
-const TransportsModel = require("../models/Transport");
 const mongoose = require("mongoose");
 
 function purchase_validation_schema() {
@@ -50,10 +47,8 @@ function purchase_validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  //const accounts = JSON.parse(filecontent("accounts.json"));
   const accounts = await AccountsModel.find({});
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = JSON.parse(readFile("../presets/users.json"));
 
   filter_product_id = req.query.filter_product_id;
   filter_account_id = req.query.filter_account_id;
@@ -141,8 +136,6 @@ router.get("/", async (req, res) => {
     { $sort: { bill_date: 1 } },
   ];
 
-  //let purchases = await Purchases.find({ ...filter }).sort({ bill_date: 1 });
-
   let purchases = await Purchases.aggregate(pipeline);
 
   if (hide_goods_return == "1") {
@@ -166,8 +159,6 @@ router.get("/", async (req, res) => {
     records.push(nitem);
   }
 
-  //console.log("finished" + Date.now());
-
   if (sort_by == "purchase_date") records.sort(dynamicSort("purchase_date"));
   else records.sort(dynamicSort("bill_date"));
 
@@ -185,8 +176,8 @@ router.get("/transitPurchase", async (req, res) => {
   let filter = { dispatched: true };
   let records = [];
 
-  if (filter_account_id != "null" && filter_account_id != "") filter = { ...filter, account_id: filter_account_id };
-  if (filter_product_id != "null" && filter_product_id != "") filter = { ...filter, product_id: filter_product_id };
+  if (filter_account_id != "null" && filter_account_id != "") filter = { ...filter, account_id: new mongoose.Types.ObjectId(filter_account_id) };
+  if (filter_product_id != "null" && filter_product_id != "") filter = { ...filter, product_id: new mongoose.Types.ObjectId(filter_product_id) };
   if (filter_favour_id != "null" && filter_favour_id != "") filter = { ...filter, favour_id: filter_favour_id };
   if (hide_already_received == "1") filter = { ...filter, received: false };
 
@@ -203,8 +194,6 @@ router.get("/transitPurchase", async (req, res) => {
     },
     { $sort: { dispatch_date: 1 } },
   ];
-
-  // let purchases = await Purchases.find({ dispatched: true, ...filter }).sort({ dispatched_date: 1 });
 
   let purchases = await Purchases.aggregate(pipeline);
 
@@ -246,8 +235,6 @@ router.get("/purchaseDetail/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  //let device = await verifyDevice(req.headers.device_id);
-
   const schema = purchase_validation_schema();
 
   const result = schema.validate(req.body);
@@ -260,7 +247,6 @@ router.post("/", async (req, res) => {
   const account_purchase = await Purchases.find({ account_id: result.value.account_id });
   account_purchase.map((item) => {
     db_bill_date = getDate(item.bill_date);
-    //console.log(item.bill_no + "-" + db_bill_date);
     if (formString(result.value.purchase_id) == "") {
       if (item.gr_number.toLowerCase() == result.value.gr_number.toLowerCase()) {
         duplicate_found = true;
@@ -370,15 +356,7 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/updateDispatch", async (req, res) => {
-  // const schema =  Joi.object({
-  //     purchase_id: Joi.objectId().required(),
-  //     dispatched_date: Joi.date().raw().optional()
-  // });
-
-  //const result = schema.validate(req.body);
-  //if (result.error != null ){ return res.status(BADREQUEST).send(addMarkup(0 , result.error.message , {} )); }
-
-  purchase = await Purchases.findById({ _id: req.body.purchase_id });
+  const purchase = await Purchases.findById({ _id: req.body.purchase_id });
 
   if (req.body.dispatched_date == "") {
     purchase.dispatched = false;
@@ -394,7 +372,7 @@ router.put("/updateDispatch", async (req, res) => {
 });
 
 router.put("/updateReceived", async (req, res) => {
-  purchase = await Purchases.findById({ _id: req.body.purchase_id });
+  const purchase = await Purchases.findById({ _id: req.body.purchase_id });
 
   if (req.body.received_date == "") {
     purchase.received = false;
@@ -409,45 +387,9 @@ router.put("/updateReceived", async (req, res) => {
 });
 
 function formatPurchase(item, transport_name, account_name, agent_name, product_name, change_user_name, change_date, create_user_name, create_date) {
-  grace_days = item.grace_days == undefined ? 0 : item.grace_days;
+  const grace_days = item.grace_days == undefined ? 0 : item.grace_days;
 
-  const it = {
-    _id: item._id,
-    account_id: item.account_id,
-    gr_number: item.gr_number,
-    transport_id: item.transport_id,
-    product_id: item.product_id,
-    purchase_date: item.purchase_date,
-    bill_date: item.bill_date,
-    bill_no: item.bill_no,
-    mts: item.mts,
-    short: item.short,
-    nett_mts: item.nett_mts,
-    rate: item.rate,
-    gross: item.gross,
-    discount_rate: item.discount_rate,
-    discount: item.discount,
-    overhead: item.overhead,
-    less: item.less,
-    igst: item.igst,
-    cgst: item.cgst,
-    sgst: item.sgst,
-    round: item.round,
-    purchase_amount: item.purchase_amount,
-    goods_return: item.goods_return,
-    goods_return_date: item.goods_return_date,
-    goods_return_summary: item.goods_return_summary,
-    create_user_id: item.create_user_id,
-    change_user_id: item.change_user_id,
-    create_date: item.create_date,
-    change_date: item.change_date,
-    dispatched: item.dispatched,
-    dispatched_date: item.dispatched_date,
-    received: item.received,
-    received_date: item.received_date,
-    favour_id: item.favour_id,
-    grace_days,
-  };
+  const it = { ...item, grace_days };
   const nitem = { ...{ transport_name, account_name, agent_name, product_name, change_user_name, change_date, create_user_name, create_date }, ...it };
 
   return nitem;
