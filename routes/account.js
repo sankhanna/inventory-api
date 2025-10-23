@@ -30,14 +30,14 @@ function validation_schema() {
 async function loadAccountsData() {
   let accounts;
 
-  // const cacheKey = `data-accounts`;
-  // const cachedData = myCache.get(cacheKey);
-  // if (cachedData) {
-  //   accounts = cachedData;
-  // } else {
-  accounts = await Accounts.find({}).sort({ account_name: 1 });
-  //   myCache.set(cacheKey, accounts);
-  // }
+  const cacheKey = `data-accounts`;
+  const cachedData = myCache.get(cacheKey);
+  if (cachedData) {
+    accounts = cachedData;
+  } else {
+    accounts = await Accounts.find({}).sort({ account_name: 1 });
+    myCache.set(cacheKey, accounts);
+  }
   return accounts;
 }
 router.get("/:count", async (req, res) => {

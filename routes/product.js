@@ -12,15 +12,17 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  // let products;
-  // const cacheKey = `data-products`;
-  // const cachedData = myCache.get(cacheKey);
-  // if (cachedData) {
-  //   products = cachedData;
-  // } else {
-  products = await Products.find({}).sort({ product_name: 1 });
-  //   myCache.set(cacheKey, products);
-  // }
+  let products;
+  const cacheKey = `data-products`;
+  const cachedData = myCache.get(cacheKey);
+  if (cachedData) {
+    console.log("Serving Products from cache:", cacheKey);
+    products = cachedData;
+  } else {
+    console.log("Refershing cache:", cacheKey);
+    products = await Products.find({}, { _id: 1, product_name: 1, product_group: 1, prefferd_product: 1 }).sort({ product_name: 1 });
+    myCache.set(cacheKey, products);
+  }
 
   if (products.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No product Found", { products: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "product Obtained Successfully", { products }));
