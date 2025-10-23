@@ -127,6 +127,7 @@ router.get("/", async (req, res) => {
         gr_number: 1,
         discount_rate: 1,
         discount: 1,
+        dispatched_date: 1,
         "account.account_name": 1,
         "transport.transport_name": 1,
         "product.product_name": 1,
