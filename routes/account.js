@@ -33,10 +33,8 @@ async function loadAccountsData() {
   const cacheKey = `data-accounts`;
   const cachedData = myCache.get(cacheKey);
   if (cachedData) {
-    console.log("Serving accounts from cache:", cacheKey);
     accounts = cachedData;
   } else {
-    console.log("Refershing cache:", cacheKey);
     accounts = await Accounts.find({}).sort({ account_name: 1 });
     myCache.set(cacheKey, accounts);
   }
