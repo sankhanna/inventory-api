@@ -4,8 +4,6 @@ const router = express.Router();
 const Purchases = require("../models/Purchases");
 const verifyID = require("../utils/verify");
 const readFile = require("../utils/readFile");
-const findUserName = require("../services/findUserName");
-const findUserAbbr = require("../services/findUserAbbr");
 const findAccountObj = require("../services/findAccountObj");
 const { getDate, dynamicSort } = require("../services/commonFunctions");
 const filecontent = require("../utils/readFile");
@@ -48,7 +46,6 @@ function purchase_validation_schema() {
 
 router.get("/", async (req, res) => {
   const accounts = await AccountsModel.find({});
-  const users = JSON.parse(readFile("../presets/users.json"));
 
   filter_product_id = req.query.filter_product_id;
   filter_account_id = req.query.filter_account_id;
@@ -105,9 +102,13 @@ router.get("/", async (req, res) => {
     { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
     { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
     { $lookup: { from: "agents", localField: "account.agent_id", foreignField: "_id", as: "agent" } },
-    { $unwind: { path: "$account", preserveNullAndEmptyArrays: false } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
     {
       $project: {
         bill_no: 1,
@@ -138,7 +139,7 @@ router.get("/", async (req, res) => {
         account_id: 1,
         transport_id: 1,
         product_id: 1,
-        gross:1,
+        gross: 1,
         overhead: 1,
         less: 1,
         round: 1,
@@ -147,6 +148,8 @@ router.get("/", async (req, res) => {
         "transport.transport_name": 1,
         "product.product_name": 1,
         "agent.agent_name": 1,
+        "createUser.complete_name": 1,
+        "changeUser.complete_name": 1,
       },
     },
     { $sort: { bill_date: 1 } },
@@ -165,13 +168,10 @@ router.get("/", async (req, res) => {
   for (let counter = 0; counter < purchases.length; counter++) {
     const item = purchases[counter];
 
-    let change_user_name = findUserAbbr(users, item.change_user_id);
-    let create_user_name = findUserAbbr(users, item.create_user_id);
-
     let agentName = "";
     if (item.agent.length) agentName = item.agent[0].agent_name;
 
-    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, agentName, item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
+    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, agentName, item.product.product_name, item.changeUser.complete_name, item.change_date, item.createUser.complete_name, item.create_date);
     records.push(nitem);
   }
 
@@ -202,11 +202,16 @@ router.get("/transitPurchase", async (req, res) => {
     { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
     { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
     { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
-    { $unwind: { path: "$account", preserveNullAndEmptyArrays: false } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
     {
-      $project: {   bill_no: 1,
+      $project: {
+        bill_no: 1,
         bill_date: 1,
         purchase_date: 1,
         purchase_amount: 1,
@@ -234,14 +239,16 @@ router.get("/transitPurchase", async (req, res) => {
         account_id: 1,
         transport_id: 1,
         product_id: 1,
-        gross:1,
+        gross: 1,
         overhead: 1,
         less: 1,
         round: 1,
         grace_days: 1,
-        "account.account_name": 1, 
-        "transport.transport_name": 1, 
-        "product.product_name": 1 
+        "account.account_name": 1,
+        "transport.transport_name": 1,
+        "product.product_name": 1,
+        "createUser.complete_name": 1,
+        "changeUser.complete_name": 1,
       },
     },
     { $sort: { dispatch_date: 1 } },
@@ -261,16 +268,9 @@ router.get("/transitPurchase", async (req, res) => {
     purchases = records;
   }
 
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
-
   records = [];
   records = purchases.map((item) => {
-    change_user_name = findUserName(users, item.change_user_id);
-    create_user_name = findUserName(users, item.create_user_id);
-
-    const nitem = formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, change_user_name, item.change_date, create_user_name, item.create_date);
-    return nitem;
+    return formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, item.changeUser.complete_name, item.change_date, item.createUser.complete_name, item.create_date);
   });
 
   if (records.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No purchases Found", { purchases: [] }));
@@ -443,7 +443,6 @@ function formatPurchase(item, transport_name, account_name, agent_name, product_
 
   const it = { ...item, grace_days };
   const nitem = { ...{ transport_name, account_name, agent_name, product_name, change_user_name, change_date, create_user_name, create_date }, ...it };
-
   return nitem;
 }
 
