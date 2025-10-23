@@ -206,7 +206,9 @@ router.get("/transitPurchase", async (req, res) => {
     { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } },
     {
-      $project: {   bill_no: 1,
+      $project: {   
+        _id: 1,
+        bill_no: 1,
         bill_date: 1,
         purchase_date: 1,
         purchase_amount: 1,
