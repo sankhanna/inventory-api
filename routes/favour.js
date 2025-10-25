@@ -8,7 +8,7 @@ router.get("/", async (req, res) => {
     { _id: "SEPL", name: "SEPL" },
     { _id: "SPMPL", name: "SPMPL" },
   ];
-  return res.status(SUCCESS).send(addMarkup(1, "favours", { favours: favours }));
+  return res.status(SUCCESS).send(addMarkup(1, "favours", { favours }));
 });
 
 module.exports = router;
