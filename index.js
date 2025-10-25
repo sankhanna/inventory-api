@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const compression = require("compression");
 // const logger = require("./middleware/logger");
 var cors = require("cors");
-const { co, formString, addMarkup } = require("./services/commonFunctions");
+const { co, formString, addMarkup } = require("./utils/common-functions");
 
 // app.use(function (req, res, next) {
 //   res.header("Access-Control-Allow-Origin", "http://localhost:3000");

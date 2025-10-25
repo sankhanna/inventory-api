@@ -9,7 +9,7 @@ const Loadworkshops = require("../services/productionworkshops");
 const findWorkshopName = require("../services/findWorkshopName");
 const mongoose = require("mongoose");
 const MaterialIssueothers = require("../models/MaterialIssueothers");
-const convertDateToISO = require("../utils/convert-date-iso");
+const { convertDateToISO } = require("../utils/common-functions");
 
 async function findstock(current_product_id, workshop_id, as_on_date) {
   let qty = 0;

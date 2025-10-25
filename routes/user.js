@@ -4,8 +4,7 @@ const router = express.Router();
 const filecontent = require("../utils/readFile");
 const Token = require("../models/Tokens");
 const sha256 = require("sha256");
-const random_string = require("../utils/random_string");
-const random_number = require("../utils/random_number");
+const { randomNumber, randomString } = require("../utils/common-functions");
 const { send_message_using_twilio, send_message_using_fast2sms } = require("../utils/send_message_using_twilio");
 
 router.post("/validateUser", async (req, res) => {
@@ -20,8 +19,8 @@ router.post("/validateUser", async (req, res) => {
   }
   const users_json = JSON.parse(filecontent("users.json"));
 
-  const device_id = random_string(255);
-  const generated_otp = random_number(6);
+  const device_id = randomString(255);
+  const generated_otp = randomNumber(6);
 
   let validated_user = { valid_user: false };
   await Promise.all(
