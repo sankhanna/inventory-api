@@ -36,6 +36,11 @@ function dynamicSort(property) {
   };
 }
 
+const addMarkup = (status, message, data) => {
+  const result = { status: status, message: message, data: data };
+  return result;
+};
+
 module.exports.co = jsonStringify;
 
 module.exports.formString = frmString;
@@ -43,3 +48,5 @@ module.exports.formString = frmString;
 module.exports.getDate = getDate;
 
 module.exports.dynamicSort = dynamicSort;
+
+module.exports.addMarkup = addMarkup;

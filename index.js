@@ -2,10 +2,9 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const compression = require("compression");
-const { addMarkup } = require("./utils/formatter");
-const logger = require("./middleware/logger");
+// const logger = require("./middleware/logger");
 var cors = require("cors");
-const { co, formString } = require("./services/commonFunctions");
+const { co, formString, addMarkup } = require("./services/commonFunctions");
 
 // app.use(function (req, res, next) {
 //   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
@@ -65,7 +64,7 @@ const user = require("./routes/user");
 app
   .use(compression())
   .use(express.json())
-  .use(logger)
+  //.use(logger)
   .use(header)
   .use("/api/account", account)
   .use("/api/agent", agent)
