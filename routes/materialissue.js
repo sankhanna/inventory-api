@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
   const tmpData = readFile("../presets/users.json");
   const users = JSON.parse(tmpData);
 
-  records = [];
+  let records = [];
   records = materialissue.map((item) => {
     account_name = findAccountName(accounts, item.account_id);
     workshop_name = findWorkshopName(workshops, item.workshop_id);

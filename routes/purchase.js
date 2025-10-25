@@ -171,7 +171,7 @@ router.get("/", async (req, res) => {
     let agentName = "";
     if (item.agent.length) agentName = item.agent[0].agent_name;
 
-    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, agentName, item.product.product_name, item.changeUser.complete_name, item.change_date, item.createUser.complete_name, item.create_date);
+    const nitem = formatPurchase(item, item.transport?.transport_name, item.account.account_name, agentName, item.product.product_name, item.changeUser?.complete_name, item.change_date, item.createUser?.complete_name, item.create_date);
     records.push(nitem);
   }
 
@@ -270,7 +270,7 @@ router.get("/transitPurchase", async (req, res) => {
 
   records = [];
   records = purchases.map((item) => {
-    return formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, item.changeUser.complete_name, item.change_date, item.createUser.complete_name, item.create_date);
+    return formatPurchase(item, item.transport.transport_name, item.account.account_name, "", item.product.product_name, item.changeUser?.complete_name, item.change_date, item.createUser?.complete_name, item.create_date);
   });
 
   if (records.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No purchases Found", { purchases: [] }));
