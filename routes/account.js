@@ -1,11 +1,9 @@
-const NodeCache = require("node-cache");
 const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Accounts = require("../models/Accounts");
 const verifyID = require("../utils/verify");
-const myCache = new NodeCache({ stdTTL: 3600 });
 
 function validation_schema() {
   const schema = Joi.object({
@@ -28,16 +26,7 @@ function validation_schema() {
 }
 
 async function loadAccountsData() {
-  let accounts;
-
-  const cacheKey = `data-accounts`;
-  const cachedData = myCache.get(cacheKey);
-  if (cachedData) {
-    accounts = cachedData;
-  } else {
-    accounts = await Accounts.find({}).sort({ account_name: 1 });
-    myCache.set(cacheKey, accounts);
-  }
+  let accounts = await Accounts.find({}).sort({ account_name: 1 });
   return accounts;
 }
 router.get("/:count", async (req, res) => {
@@ -114,7 +103,6 @@ router.post("/", async (req, res) => {
       (account.state = result.value.state);
   }
   const saveResult = await account.save();
-  myCache.flushAll();
 
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Account saved successfully", { account: saveResult }));

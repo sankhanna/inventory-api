@@ -1,10 +1,8 @@
-const NodeCache = require("node-cache");
 const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Products = require("../models/Product");
-const myCache = new NodeCache({ stdTTL: 3600 });
 
 function validation_schema() {
   const schema = Joi.object({ product_id: Joi.objectId().optional(), product_name: Joi.string().min(2).max(100).required(), product_group: Joi.string().min(2).max(100).required(), prefferd_product: Joi.boolean().required() });
@@ -12,17 +10,7 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  let products;
-  const cacheKey = `data-products`;
-  const cachedData = myCache.get(cacheKey);
-  if (cachedData) {
-    console.log("Serving Products from cache:", cacheKey);
-    products = cachedData;
-  } else {
-    console.log("Refershing cache:", cacheKey);
-    products = await Products.find({}, { _id: 1, product_name: 1, product_group: 1, prefferd_product: 1 }).sort({ product_name: 1 });
-    myCache.set(cacheKey, products);
-  }
+  let products = await Products.find({}, { _id: 1, product_name: 1, product_group: 1, prefferd_product: 1 }).sort({ product_name: 1 });
 
   if (products.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No product Found", { products: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "product Obtained Successfully", { products }));
@@ -61,7 +49,6 @@ router.post("/", async (req, res) => {
     Product.change_user_id = req.headers.user_id;
   }
   const saveResult = await Product.save();
-  myCache.flushAll();
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "product successfully", { product: saveResult }));
   } else {
@@ -98,7 +85,6 @@ router.delete("/:id", async (req, res) => {
 
   if (totalRecordFound == 0) {
     await Products.deleteOne({ _id: req.params.id });
-    myCache.flushAll();
     return res.status(SUCCESS).send(addMarkup(1, "product deleted Successfully", { product: product }));
   } else {
     return res.status(BADREQUEST).send(addMarkup(1, "product is in use and cannot be deleted.", { product: product }));

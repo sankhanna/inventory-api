@@ -3,7 +3,6 @@ const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const Transports = require("../models/Transport");
-const cacheService = require("../services/cache");
 
 function validation_schema() {
   const schema = Joi.object({ transport_id: Joi.objectId().optional(), transport_name: Joi.string().min(2).max(100).required() });
@@ -11,7 +10,7 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const transports = await cacheService.transportCache();
+  const transports = await Transports.find().sort({ transport_name: 1 });
 
   if (transports.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No transport Found", { transports: [] }));
   else return res.status(SUCCESS).send(addMarkup(1, "transport Obtained Successfully", { transports }));
@@ -42,8 +41,6 @@ router.post("/", async (req, res) => {
     transport.create_user_id = req.headers.user_id;
   }
   const saveResult = await transport.save();
-  await cacheService.clearTransportCache();
-  console.log("Entire cache flushed.");
   if (saveResult) {
     return res.status(SUCCESS).send(addMarkup(1, "Transport saved successfully", { transport: saveResult }));
   } else {
