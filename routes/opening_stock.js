@@ -1,9 +1,7 @@
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Products = require("../models/Product");
 const OpeningStock = require("../models/OpeningStock");
-const findProductName = require("../services/findProductName");
 
 function validation_schema() {
   const schema = Joi.object({ current_record_id: Joi.objectId().optional(), product_id: Joi.objectId().required(), qty: Joi.number().required(), rate: Joi.number().required(), value: Joi.number().required() });
@@ -11,13 +9,20 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const os = await OpeningStock.find().sort({ product_id: 1 });
-  const products = await Products.find();
+  const pipeline = [
+    { $lookup: { from: "products", localField: "product_id", foreignField: "_id", as: "product" } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $project: { _id: 1, product_id: 1, qty: 1, rate: 1, value: 1, create_date: 1, change_date: 1, "product.product_name": 1, "createUser.complete_name": 1, "changeUser.complete_name": 1 } },
+    { $sort: { product_id: 1 } },
+  ];
 
-  let result = [];
-  result = os.map((item) => {
-    product_name = findProductName(products, item.product_id);
-    return { _id: item._id, product_id: item.product_id, product_name, qty: item.qty, rate: item.rate, value: item.value, create_date: item.create_date, change_date: item.change_date };
+  const os = await OpeningStock.aggregate(pipeline).sort({ product_id: 1 });
+  const result = os.map((item) => {
+    return { _id: item._id, product_id: item.product_id, product_name: item?.product.product_name, qty: item.qty, rate: item.rate, value: item.value, create_date: item.create_date, change_date: item.change_date };
   });
 
   if (result.length == 0) return res.status(SUCCESS).send(addMarkup(1, "No opening stock entry found.", { os: [] }));
