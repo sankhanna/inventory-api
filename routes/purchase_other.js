@@ -186,7 +186,7 @@ router.post("/", async (req, res) => {
 
   let PurchaseOther = null;
   if (result.value.purchase_id == null) {
-    PurchaseOther = new PO({
+    PurchaseOther = new PurchaseOtherModel({
       purchase_type: result.value.purchase_type,
       purchase_date: result.value.purchase_date,
       bill_date: result.value.bill_date,

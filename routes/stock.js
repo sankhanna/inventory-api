@@ -145,17 +145,6 @@ router.get("/getPendingStock", async (req, res) => {
       let current_product_id = itm._id;
       let product = findProduct(products, current_product_id);
       const transitPurchase = await Purchases.find({ dispatched: true, product_id: current_product_id });
-      // const materialreceipt = await MaterialReceipts.find({
-      //   transactions: {
-      //     $elemMatch: { product_id: current_product_id },
-      //   },
-      // });
-
-      // const materialissue = await MaterialIssue.find({
-      //   transactions: {
-      //     $elemMatch: { product_id: current_product_id },
-      //   },
-      // }).sort({ _id: 1 });
 
       let avg_purchase_rate = findAvgPurchaseRate(purchases_summary, current_product_id);
       let obj = {
@@ -203,53 +192,7 @@ router.get("/getPendingStock", async (req, res) => {
         }
       });
 
-      // materialreceipt.map((item) => {
-      //   let transactions = item.transactions;
-      //   let workshop_id = item.workshop_id;
-      //   transactions.map((row) => {
-      //     if (CO(current_product_id) == CO(row.product_id)) {
-      //       if (workshop_id == "10") {
-      //         under_grey_warehouse += row.nett_qty;
-      //       }
-      //       if (workshop_id == "20") {
-      //         under_processing += row.nett_qty;
-      //       }
-      //       if (workshop_id == "30") {
-      //         under_job += row.nett_qty;
-      //       }
-      //       if (workshop_id == "40") {
-      //         under_dispatch += row.nett_qty;
-      //       }
-      //     }
-      //   });
-      // });
-
       let total_issue = 0;
-      // materialissue.map((item) => {
-      //   let transactions = item.transactions;
-      //   let workshop_id = item.workshop_id;
-      //   let to_workshop_id = item.to_workshop_id;
-      //   transactions.map((row) => {
-      //     if (CO(current_product_id) == CO(row.product_id)) {
-      //       if (to_workshop_id == "10") under_grey_warehouse += row.nett_qty;
-      //       if (to_workshop_id == "20") under_processing += row.nett_qty;
-      //       if (to_workshop_id == "30") under_job += row.nett_qty;
-      //       if (to_workshop_id == "40") under_dispatch += row.nett_qty;
-
-      //       if (workshop_id == "10") {
-      //         under_grey_warehouse -= row.nett_qty;
-      //         total_issue += row.nett_qty;
-      //       }
-      //       if (workshop_id == "20") under_processing -= row.nett_qty;
-      //       if (workshop_id == "30") under_job -= row.nett_qty;
-      //       if (workshop_id == "40") under_dispatch -= row.nett_qty;
-
-      //       if (formString(row.material_receipt_ref_str) == "" && workshop_id == "10") {
-      //         console.log("Error In Product :" + current_product_id + " : " + product.product_name + " : " + row.nett_qty);
-      //       }
-      //     }
-      //   });
-      // });
 
       materialIssues.map((row) => {
         let workshop_id = row.workshop_id;
