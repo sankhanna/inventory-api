@@ -4,9 +4,6 @@ const express = require("express");
 const router = express.Router();
 const PurchaseOtherModel = require("../models/Purchases_other");
 const verifyID = require("../utils/verify");
-const readFile = require("../utils/readFile");
-const findUserName = require("../services/findUserName");
-
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -55,17 +52,18 @@ function validation_schema() {
 const _getPurchaseOtherPipeline = (filter) => {
   const pipeline = [
     { $match: filter },
-
     { $lookup: { from: "products", localField: "transactions.product_id", foreignField: "_id", as: "product_details" } },
     { $unwind: { path: "$product_info", preserveNullAndEmptyArrays: true } },
-
     { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
     { $lookup: { from: "accounts", localField: "purchase_type", foreignField: "_id", as: "purchasetype" } },
     { $lookup: { from: "transports", localField: "transport_id", foreignField: "_id", as: "transport" } },
-
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
     { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$transport", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$purchasetype", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
     {
       $addFields: {
         transactions: {
@@ -116,6 +114,8 @@ const _getPurchaseOtherPipeline = (filter) => {
         "account.account_name": 1,
         "transport.transport_name": 1,
         "purchasetype.account_name": 1,
+        "createUser.complete_name": 1,
+        "changeUser.complete_name": 1,
       },
     },
     { $sort: { purchase_date: -1 } },
@@ -129,8 +129,6 @@ router.get("/", async (req, res) => {
   let filter_department_id = req.query.filter_department_id;
   let start_date = req.query.start_date;
   let end_date = req.query.end_date;
-
-  const users = JSON.parse(readFile("../presets/users.json"));
 
   let filter = {};
   if (filter_purchase_type != "") filter = { ...filter, purchase_type: new mongoose.Types.ObjectId(filter_purchase_type) };
@@ -149,14 +147,18 @@ router.get("/", async (req, res) => {
   const pipeLine = _getPurchaseOtherPipeline(filter);
   let PurchaseOther = await PurchaseOtherModel.aggregate(pipeLine);
 
-  records = [];
-  records = PurchaseOther.map((item) => {
-    change_user_name = findUserName(users, item.change_user_id);
-    create_user_name = findUserName(users, item.create_user_id);
-
-    const nitem = formatPurchaseOtherRow(item, item.purchasetype?.account_name, item.account?.account_name, item.transport?.transport_name, change_user_name, item.change_date, create_user_name, item.create_date, filter_department_id);
-
-    return nitem;
+  const records = PurchaseOther.map((item) => {
+    return formatPurchaseOtherRow(
+      item,
+      item.purchasetype?.account_name,
+      item.account?.account_name,
+      item.transport?.transport_name,
+      item.changeUser?.complete_name,
+      item.change_date,
+      item.createUser?.complete_name,
+      item.create_date,
+      filter_department_id
+    );
   });
 
   return res.status(SUCCESS).send(addMarkup(1, "material issue Obtained Successfully", { PurchaseOthers: records }));
@@ -165,18 +167,13 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   if (verifyID(req.params.id) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { PurchaseOther: {} }));
 
-  const users = JSON.parse(readFile("../presets/users.json"));
-
   const filter = { _id: new mongoose.Types.ObjectId(req.params.id) };
   const pipeLine = _getPurchaseOtherPipeline(filter);
 
   let item = await PurchaseOtherModel.aggregate(pipeLine);
   if (!item.length) return res.status(BADREQUEST).send(addMarkup(0, "entry not found", { PurchaseOther: {} }));
 
-  change_user_name = findUserName(users, item.change_user_id);
-  create_user_name = findUserName(users, item.create_user_id);
-
-  const nitem = formatPurchaseOtherRow(item[0], item.purchasetype?.account_name, item.account?.account_name, item.transport?.transport_name, change_user_name, item.change_date, create_user_name, item.create_date, 0);
+  const nitem = formatPurchaseOtherRow(item[0], item.purchasetype?.account_name, item.account?.account_name, item.transport?.transport_name, item.changeUser?.complete_name, item.change_date, item.createUser?.complete_name, item.create_date, 0);
   return res.status(SUCCESS).send(addMarkup(1, "material issue entry Obtained Successfully", { PurchaseOther: nitem }));
 });
 
