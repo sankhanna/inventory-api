@@ -1,8 +1,7 @@
-const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Agents = require("../models/Agents");
+const Agents = require("../../models/Agents");
 
 function validation_schema() {
   const schema = Joi.object({ agent_id: Joi.objectId().optional(), agent_name: Joi.string().min(2).max(100).required() });

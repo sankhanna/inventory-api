@@ -35,31 +35,31 @@ global.formString = formString;
 
 mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const account = require("./routes/account");
-const agent = require("./routes/agent");
-const city = require("./routes/city");
-const transport = require("./routes/transport");
-const product = require("./routes/product");
-const state = require("./routes/state");
-const group = require("./routes/group");
-const group_product = require("./routes/group_product");
-const balancetype = require("./routes/balancetype");
+const account = require("./routes/master/account");
+const agent = require("./routes/master/agent");
+const balancetype = require("./routes/master/balancetype");
+const city = require("./routes/master/city");
+const favour = require("./routes/master/favour");
+const group_product = require("./routes/master/group_product");
+const transport = require("./routes/master/transport");
+const transactionTypes = require("./routes/master/transaction_types");
+const product = require("./routes/master/product");
+const group = require("./routes/master/group");
+const state = require("./routes/master/state");
+const workshops = require("./routes/master/workshops");
+const productionworkshops = require("./routes/master/productionworkshops");
+const user = require("./routes/master/user");
 const purchase = require("./routes/purchase");
 const purchase_other = require("./routes/purchase_other");
-const workshops = require("./routes/workshops");
-const productionworkshops = require("./routes/productionworkshops");
 const materialreceipt = require("./routes/materialreceipt");
 const finishedreceipt = require("./routes/finishedreceipt");
 const finishedissue = require("./routes/finishedissue");
 const materialissue = require("./routes/materialissue");
 const materialissueother = require("./routes/materialissueother");
-const favour = require("./routes/favour");
-const transactionTypes = require("./routes/transaction_types");
 const stock = require("./routes/stock");
 const stockother = require("./routes/stock_other");
 const batchsearch = require("./routes/batchsearch");
 const opening_stock = require("./routes/opening_stock");
-const user = require("./routes/user");
 
 app
   .use(compression())

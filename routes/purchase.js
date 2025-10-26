@@ -3,10 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Purchases = require("../models/Purchases");
 const verifyID = require("../utils/verify");
-const readFile = require("../utils/readFile");
-const findAccountObj = require("../services/findAccountObj");
 const { getDate, dynamicSort } = require("../utils/common-functions");
-const filecontent = require("../utils/readFile");
 const AccountsModel = require("../models/Accounts");
 const mongoose = require("mongoose");
 

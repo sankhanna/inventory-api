@@ -1,7 +1,7 @@
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const State = require("../models/States");
+const State = require("../../models/States");
 
 router.get("/", async (req, res) => {
   const state = await State.find().sort({ state_name: 1 });

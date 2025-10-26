@@ -1,8 +1,7 @@
-const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Transports = require("../models/Transport");
+const Transports = require("../../models/Transport");
 
 function validation_schema() {
   const schema = Joi.object({ transport_id: Joi.objectId().optional(), transport_name: Joi.string().min(2).max(100).required() });

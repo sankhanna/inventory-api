@@ -1,9 +1,8 @@
-const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Accounts = require("../models/Accounts");
-const verifyID = require("../utils/verify");
+const Accounts = require("../../models/Accounts");
+const verifyID = require("../../utils/verify");
 
 function validation_schema() {
   const schema = Joi.object({

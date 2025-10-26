@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const findProductionWorkShops = require("../services/productionworkshops");
+const findWorkShops = require("../../services/workshops");
 
 router.get("/", async (req, res) => {
-  workshops = findProductionWorkShops();
+  workshops = findWorkShops();
   return res.status(SUCCESS).send(addMarkup(1, "Workshops", { workshops: workshops }));
 });
 

@@ -1,9 +1,8 @@
-const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const City = require("../models/City");
-const verifyID = require("../utils/verify");
+const City = require("../../models/City");
+
 
 function validation_schema() {
   const schema = Joi.object({ city_id: Joi.objectId().optional(), city_name: Joi.string().min(2).max(100).required() });

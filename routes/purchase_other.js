@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const PO = require("../models/Purchases_other");
+const PurchaseOtherModel = require("../models/Purchases_other");
 const verifyID = require("../utils/verify");
 const readFile = require("../utils/readFile");
 const findUserName = require("../services/findUserName");
-const filecontent = require("../utils/readFile");
+
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -147,7 +147,7 @@ router.get("/", async (req, res) => {
   }
 
   const pipeLine = _getPurchaseOtherPipeline(filter);
-  let PurchaseOther = await PO.aggregate(pipeLine);
+  let PurchaseOther = await PurchaseOtherModel.aggregate(pipeLine);
 
   records = [];
   records = PurchaseOther.map((item) => {
@@ -170,7 +170,7 @@ router.get("/:id", async (req, res) => {
   const filter = { _id: new mongoose.Types.ObjectId(req.params.id) };
   const pipeLine = _getPurchaseOtherPipeline(filter);
 
-  let item = await PO.aggregate(pipeLine);
+  let item = await PurchaseOtherModel.aggregate(pipeLine);
   if (!item.length) return res.status(BADREQUEST).send(addMarkup(0, "entry not found", { PurchaseOther: {} }));
 
   change_user_name = findUserName(users, item.change_user_id);
@@ -235,7 +235,7 @@ router.post("/", async (req, res) => {
     });
     PurchaseOther.transactions = xtransactions;
   } else {
-    PurchaseOther = await PO.findById({ _id: result.value.purchase_id });
+    PurchaseOther = await PurchaseOtherModel.findById({ _id: result.value.purchase_id });
 
     PurchaseOther.change_date = new Date();
     PurchaseOther.change_user_id = req.headers.user_id;

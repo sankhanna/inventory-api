@@ -1,11 +1,11 @@
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const filecontent = require("../utils/readFile");
-const Token = require("../models/Tokens");
+const filecontent = require("../../utils/readFile");
+const Token = require("../../models/Tokens");
 const sha256 = require("sha256");
-const { randomNumber, randomString } = require("../utils/common-functions");
-const { send_message_using_twilio, send_message_using_fast2sms } = require("../utils/send_message_using_twilio");
+const { randomNumber, randomString } = require("../../utils/common-functions");
+const { send_message_using_twilio, send_message_using_fast2sms } = require("../../utils/send_message_using_twilio");
 
 router.post("/validateUser", async (req, res) => {
   const schema = Joi.object({

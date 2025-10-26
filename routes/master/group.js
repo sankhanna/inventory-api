@@ -1,8 +1,8 @@
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Group = require("../models/Groups");
-const verifyID = require("../utils/verify");
+const Group = require("../../models/Groups");
+const verifyID = require("../../utils/verify");
 
 router.get("/", async (req, res) => {
   const group = await Group.find().sort({ group_name: 1 });

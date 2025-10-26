@@ -2,7 +2,7 @@ const fs = require("fs");
 const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Products = require("../models/Product");
+const Products = require("../../models/Product");
 
 function validation_schema() {
   const schema = Joi.object({ product_id: Joi.objectId().optional(), product_name: Joi.string().min(2).max(100).required(), product_group: Joi.string().min(2).max(100).required(), prefferd_product: Joi.boolean().required() });

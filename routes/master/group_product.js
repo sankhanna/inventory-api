@@ -1,8 +1,6 @@
-const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Group = require("../models/Group_product");
-const verifyID = require("../utils/verify");
+const Group = require("../../models/Group_product");
 
 router.get("/", async (req, res) => {
   const group = await Group.find();
