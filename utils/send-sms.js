@@ -1,28 +1,3 @@
-async function send_message_using_twilio(to_phone_number , message )
-{
-    try
-    {
-        var client = require('twilio')(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
-
-        client.messages.create({
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: to_phone_number,
-            body: message
-        }).then((message) => {
-            console.log(message.sid);
-            console.log(message);
-        });
-        
-    }
-    catch(e)
-    {
-        console.log("Error sending message");
-        console.log(e);
-    }
-}
 
 async function send_message_using_fast2sms(to_phone_number , otp )
 {
@@ -54,7 +29,5 @@ async function send_message_using_fast2sms(to_phone_number , otp )
         console.log(e);
     }
 }
-
-module.exports.send_message_using_twilio = send_message_using_twilio;
 
 module.exports.send_message_using_fast2sms = send_message_using_fast2sms;

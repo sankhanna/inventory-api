@@ -5,7 +5,7 @@ const filecontent = require("../../utils/readFile");
 const Token = require("../../models/Tokens");
 const sha256 = require("sha256");
 const { randomNumber, randomString } = require("../../utils/common-functions");
-const { send_message_using_twilio, send_message_using_fast2sms } = require("../../utils/send_message_using_twilio");
+const { send_message_using_fast2sms } = require("../../utils/send-sms");
 
 router.post("/validateUser", async (req, res) => {
   const schema = Joi.object({
@@ -31,7 +31,6 @@ router.post("/validateUser", async (req, res) => {
         validated_user = { ...item, valid_user: true, token: device_id, otp: generated_otp };
 
         if (item.mobile != "") {
-          //await send_message_using_twilio(item.mobile , 'OTP for login is ' + generated_otp );
           await send_message_using_fast2sms(item.mobile, generated_otp);
         }
       }
