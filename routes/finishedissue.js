@@ -2,7 +2,6 @@ const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
 const FinishedIssue = require("../models/FinishedIssue");
-const FinishedReceipts = require("../models/FinishedReceipts");
 const verifyID = require("../utils/verify");
 const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");

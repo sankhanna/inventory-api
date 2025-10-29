@@ -1,14 +1,10 @@
-const Joi = require("joi-oid");
 const express = require("express");
 const router = express.Router();
-const Purchases = require("../models/Purchases");
-const verifyID = require("../utils/verify");
 const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
 const findAccountName = require("../services/findAccountName");
 const findWorkshopName = require("../services/findWorkshopName");
 const findProductName = require("../services/findProductName");
-const MaterialReceipts = require("../models/MaterialReceipts");
 const MaterialIssue = require("../models/MaterialIssue");
 const Loadworkshops = require("../services/workshops");
 const readFile = require("../utils/readFile");
@@ -22,7 +18,7 @@ router.get("/", async (req, res) => {
   const workshops = Loadworkshops();
   let materialissue = await MaterialIssue.find({ $or: [{ "transactions.batch_no": main_search }] });
 
-  records = [];
+  let records = [];
   records = materialissue.map((itm) => {
     workshop_name = findWorkshopName(workshops, itm.workshop_id);
     to_workshop_name = findWorkshopName(workshops, itm.to_workshop_id);
