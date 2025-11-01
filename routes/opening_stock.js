@@ -44,24 +44,10 @@ router.post("/", async (req, res) => {
 
   let osentry = null;
   if (result.value.current_record_id == null) {
-    osentry = new OpeningStock({
-      product_id: result.value.product_id,
-      qty: result.value.qty,
-      rate: result.value.rate,
-      value: result.value.value,
-      create_date: new Date(),
-      change_date: new Date(),
-      create_user_id: req.headers.user_id,
-      change_user_id: req.headers.user_id,
-    });
+    osentry = new OpeningStock({ ...result.value, create_user_id: req.headers.user_id, change_user_id: req.headers.user_id });
   } else {
     osentry = await OpeningStock.findById({ _id: result.value.current_record_id });
-    osentry.product_id = result.value.product_id;
-    osentry.qty = result.value.qty;
-    osentry.rate = result.value.rate;
-    osentry.value = result.value.value;
-    osentry.change_date = new Date();
-    osentry.change_user_id = req.headers.user_id;
+    osentry.set({ ...result.value, change_user_id: req.headers.user_id, change_date: new Date() });
   }
   const saveResult = await osentry.save();
 
