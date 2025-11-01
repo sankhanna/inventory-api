@@ -28,26 +28,10 @@ async function findstock(current_product_id, workshop_id, as_on_date) {
   });
 
   let allPurchases = await Purchases_other.aggregate([
-    {
-      $match: {
-        purchase_date: { $lte: moment(as_on_date).endOf("day").toDate() },
-        purchase_date: { $gte: moment("2024-07-31T18:29:59.000Z").endOf("day").toDate() },
-      },
-    },
-    {
-      $unwind: "$transactions",
-    },
-    {
-      $match: {
-        "transactions.product_id": { $eq: new mongoose.Types.ObjectId(current_product_id) },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$transactions.qty" },
-      },
-    },
+    { $match: { purchase_date: { $lte: moment(as_on_date).endOf("day").toDate() }, purchase_date: { $gte: moment("2024-07-31T18:29:59.000Z").endOf("day").toDate() } } },
+    { $unwind: "$transactions" },
+    { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(current_product_id) } } },
+    { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
   ]);
 
   allPurchases.map((item) => {
@@ -70,37 +54,11 @@ async function findstock(current_product_id, workshop_id, as_on_date) {
     });
   });
 
-  // if ( parseInt(workshop_id) > 0 ) {
-  //     MIO.map((item) =>{
-  //         const transaction_date = new Date(item.transaction_date);
-  //         if ( transaction_date <= as_on_date && item.to_workshop_id == workshop_id ){
-  //             item.transactions.map((tem) => {
-  //                 if ( JSON.stringify(current_product_id) == JSON.stringify(tem.product_id) ){ qty += tem.qty; }
-  //             });
-  //         }
-  //     });
-  // }
-
   let allIssues = await MIO.aggregate([
-    {
-      $match: {
-        transaction_date: { $lte: moment(as_on_date).endOf("day").toDate() },
-      },
-    },
-    {
-      $unwind: "$transactions",
-    },
-    {
-      $match: {
-        "transactions.product_id": { $eq: new mongoose.Types.ObjectId(current_product_id) },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$transactions.qty" },
-      },
-    },
+    { $match: { transaction_date: { $lte: moment(as_on_date).endOf("day").toDate() } } },
+    { $unwind: "$transactions" },
+    { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(current_product_id) } } },
+    { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
   ]);
 
   allIssues.map((item) => {
@@ -115,11 +73,6 @@ router.get("/getPendingStock", async (req, res) => {
   workshop_id = req.query.workshop_id;
   tran_date = req.query.tran_date;
   const products = await Products.find({ _id: req.params.id });
-
-  //const po = await Purchases_other.find();
-  //const po = await Purchases_other.find({ transactions: { $elemMatch: { project_id: req.params.id } } });
-  //const os = await OpeningStock.find({ product_id: req.params.id });
-  //const mio = await MIO.find();
 
   obj = await findstock(product_id, workshop_id, tran_date);
 
@@ -164,10 +117,6 @@ router.get("/getPendingStockAll", async (req, res) => {
   tran_date = req.query.tran_date;
   const products = await Products.find({ product_group: "Chemical" });
 
-  //const po = await Purchases_other.find();
-  //const os = await OpeningStock.find();
-  //const mio = await MIO.find();
-
   result = [];
   for (counter = 0; counter < products.length; counter++) {
     obj = await findstock(products[counter]._id, workshop_id, tran_date);
@@ -184,44 +133,12 @@ router.get("/get-consumption-summary", async (req, res) => {
   const ed = moment(endDate).endOf("day").toDate();
 
   const result = await MaterialIssueothers.aggregate([
-    {
-      $match: {
-        transaction_date: {
-          $gte: sd,
-          $lte: ed,
-        },
-      },
-    },
+    { $match: { transaction_date: { $gte: sd, $lte: ed } } },
     { $unwind: "$transactions" },
-    {
-      $group: {
-        _id: {
-          product_id: "$transactions.product_id",
-          transaction_date: "$transaction_date",
-        },
-        totalQuantity: { $sum: "$transactions.qty" },
-        totalValue: { $sum: "$transactions.value" },
-      },
-    },
-    {
-      $lookup: {
-        from: "products",
-        localField: "_id.product_id",
-        foreignField: "_id",
-        as: "productDetails",
-      },
-    },
+    { $group: { _id: { product_id: "$transactions.product_id", transaction_date: "$transaction_date" }, totalQuantity: { $sum: "$transactions.qty" }, totalValue: { $sum: "$transactions.value" } } },
+    { $lookup: { from: "products", localField: "_id.product_id", foreignField: "_id", as: "productDetails" } },
     { $unwind: "$productDetails" },
-    {
-      $project: {
-        _id: 0,
-        product_id: "$_id.product_id",
-        transaction_date: "$_id.transaction_date",
-        totalQuantity: 1,
-        totalValue: 1,
-        "productDetails.product_name": 1,
-      },
-    },
+    { $project: { _id: 0, product_id: "$_id.product_id", transaction_date: "$_id.transaction_date", totalQuantity: 1, totalValue: 1, "productDetails.product_name": 1 } },
     { $sort: { transaction_date: 1, "productDetails.product_name": 1 } },
   ]);
 
@@ -257,25 +174,10 @@ router.get("/get-stock-report", async (req, res) => {
     });
 
     let openingPurchasesPromise = Purchases_other.aggregate([
-      {
-        $match: {
-          purchase_date: { $lt: moment(startDate).startOf("day").toDate(), $gte: moment("2024-07-31T18:29:59.000Z").endOf("day").toDate() },
-        },
-      },
-      {
-        $unwind: "$transactions",
-      },
-      {
-        $match: {
-          "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$transactions.qty" },
-        },
-      },
+      { $match: { purchase_date: { $lt: moment(startDate).startOf("day").toDate(), $gte: moment("2024-07-31T18:29:59.000Z").endOf("day").toDate() } } },
+      { $unwind: "$transactions" },
+      { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) } } },
+      { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
     ]).then((allPurchases) => {
       allPurchases.forEach((item) => {
         opening += item.total;
@@ -283,25 +185,10 @@ router.get("/get-stock-report", async (req, res) => {
     });
 
     const purchasesPromise = Purchases_other.aggregate([
-      {
-        $match: {
-          purchase_date: { $gte: moment(startDate).startOf("day").toDate(), $lte: moment(endDate).endOf("day").toDate() },
-        },
-      },
-      {
-        $unwind: "$transactions",
-      },
-      {
-        $match: {
-          "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$transactions.qty" },
-        },
-      },
+      { $match: { purchase_date: { $gte: moment(startDate).startOf("day").toDate(), $lte: moment(endDate).endOf("day").toDate() } } },
+      { $unwind: "$transactions" },
+      { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) } } },
+      { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
     ]).then((allPurchases) => {
       allPurchases.forEach((item) => {
         purchases += item.total;
@@ -326,25 +213,10 @@ router.get("/get-stock-report", async (req, res) => {
       });
 
     const allIssuesBeforeStartPromise = MIO.aggregate([
-      {
-        $match: {
-          transaction_date: { $lt: moment(startDate).startOf("day").toDate() },
-        },
-      },
-      {
-        $unwind: "$transactions",
-      },
-      {
-        $match: {
-          "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$transactions.qty" },
-        },
-      },
+      { $match: { transaction_date: { $lt: moment(startDate).startOf("day").toDate() } } },
+      { $unwind: "$transactions" },
+      { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) } } },
+      { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
     ]).then((allIssues) => {
       allIssues.map((item) => {
         opening -= item.total;
@@ -352,25 +224,10 @@ router.get("/get-stock-report", async (req, res) => {
     });
 
     const allIssuesPromise = MIO.aggregate([
-      {
-        $match: {
-          transaction_date: { $gte: moment(startDate).startOf("day").toDate(), $lte: moment(endDate).endOf("day").toDate() },
-        },
-      },
-      {
-        $unwind: "$transactions",
-      },
-      {
-        $match: {
-          "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$transactions.qty" },
-        },
-      },
+      { $match: { transaction_date: { $gte: moment(startDate).startOf("day").toDate(), $lte: moment(endDate).endOf("day").toDate() } } },
+      { $unwind: "$transactions" },
+      { $match: { "transactions.product_id": { $eq: new mongoose.Types.ObjectId(currentProductId) } } },
+      { $group: { _id: null, total: { $sum: "$transactions.qty" } } },
     ]).then((allIssues) => {
       allIssues.map((item) => {
         consumption += item.total;
@@ -378,8 +235,6 @@ router.get("/get-stock-report", async (req, res) => {
     });
 
     await Promise.all([openingStockPromise, openingPurchasesPromise, purchasesPromise, lastPurchasePromise, allIssuesBeforeStartPromise, allIssuesPromise]);
-
-    //console.log("Processing " + counter + " currentProductId = " + productName);
 
     if (opening != 0 || consumption != 0 || purchases != 0)
       result.push({ _id: currentProductId, productName, opening: parseFloat(opening).toFixed(2), purchase: parseFloat(purchases).toFixed(2), consumption: parseFloat(consumption).toFixed(2), lpp });
