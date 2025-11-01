@@ -10,7 +10,7 @@ const Products = require("../models/Product");
 const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
 const findWorkshopName = require("../services/findWorkshopName");
-const readFile = require("../utils/readFile");
+const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 
 function validation_schema() {
@@ -45,8 +45,7 @@ router.get("/", async (req, res) => {
   const products = await Products.find();
   const workshops = Loadworkshops();
   const materialissue = await MaterialIssue.find().sort({ transaction_date: -1 });
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = await UserModel.find();
 
   let records = [];
   records = materialissue.map((item) => {

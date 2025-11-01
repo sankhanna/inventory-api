@@ -7,7 +7,7 @@ const findWorkshopName = require("../services/findWorkshopName");
 const findProductName = require("../services/findProductName");
 const MaterialIssue = require("../models/MaterialIssue");
 const Loadworkshops = require("../services/workshops");
-const readFile = require("../utils/readFile");
+const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 
 router.get("/", async (req, res) => {
@@ -17,14 +17,13 @@ router.get("/", async (req, res) => {
   const products = await Products.find();
   const workshops = Loadworkshops();
   let materialissue = await MaterialIssue.find({ $or: [{ "transactions.batch_no": main_search }] });
+  const users = await UserModel.find();
 
   let records = [];
   records = materialissue.map((itm) => {
     workshop_name = findWorkshopName(workshops, itm.workshop_id);
     to_workshop_name = findWorkshopName(workshops, itm.to_workshop_id);
     account_name = findAccountName(accounts, itm.account_id);
-    const tmpData = readFile("../presets/users.json");
-    const users = JSON.parse(tmpData);
 
     change_user_name = findUserName(users, itm.change_user_id);
     create_user_name = findUserName(users, itm.create_user_id);

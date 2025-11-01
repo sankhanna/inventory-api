@@ -7,7 +7,7 @@ const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
 const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
-const readFile = require("../utils/readFile");
+const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 
 function validation_schema() {
@@ -35,8 +35,7 @@ router.get("/", async (req, res) => {
   const accounts = await Accounts.find();
   const products = await Products.find();
   const finsihedissue = await FinishedIssue.find().sort({ transaction_date: -1 });
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = await UserModel.find();
 
   records = [];
   records = finsihedissue.map((item) => {

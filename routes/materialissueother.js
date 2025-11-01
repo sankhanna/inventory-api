@@ -7,7 +7,7 @@ const Loadworkshops = require("../services/productionworkshops");
 const Products = require("../models/Product");
 const findProductName = require("../services/findProductName");
 const findWorkshopName = require("../services/findWorkshopName");
-const readFile = require("../utils/readFile");
+const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 
 function validation_schema() {
@@ -38,15 +38,11 @@ router.get("/", async (req, res) => {
   const products = await Products.find();
   const workshops = Loadworkshops();
   const materialissueother = await MaterialIssueOther.find({ transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } }).sort({ transaction_date: -1 });
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = await UserModel.find();
 
   records = [];
   materialissueother.map((item) => {
     process_record = true;
-    // if ( start_date != "" && end_date != ""){
-    //     process_record = item.transaction_date >= new Date(start_date) && item.transaction_date <= new Date(end_date) ? true : false;
-    // }
 
     if (filter_workshop_id != "") {
       process_record = item.to_workshop_id == filter_workshop_id ? true : false;

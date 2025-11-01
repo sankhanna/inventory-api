@@ -10,7 +10,7 @@ const Products = require("../models/Product");
 const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
 const findWorkshopName = require("../services/findWorkshopName");
-const readFile = require("../utils/readFile");
+const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 const mongoose = require("mongoose");
 
@@ -42,8 +42,7 @@ router.get("/", async (req, res) => {
   const products = await Products.find();
   const workshops = Loadworkshops();
   const materialreceipt = await MaterialReceipts.find().sort({ _id: -1 });
-  const tmpData = readFile("../presets/users.json");
-  const users = JSON.parse(tmpData);
+  const users = await UserModel.find();
 
   records = [];
   records = materialreceipt.map((item) => {
