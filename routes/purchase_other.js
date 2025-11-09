@@ -118,7 +118,7 @@ const _getPurchaseOtherPipeline = (filter) => {
         "changeUser.complete_name": 1,
       },
     },
-    { $sort: { purchase_date: -1 } },
+    { $sort: { purchase_date: -1, create_date: 1 } },
   ];
   return pipeline;
 };

@@ -77,66 +77,20 @@ router.get("/getPendingStock", async (req, res) => {
   if (formString(req.query.prefered) == "1") products = await Products.find({ product_group: "Grey", prefferd_product: true }).sort({ product_name: 1 });
   else products = await Products.find({ product_group: "Grey" }).sort({ product_name: 1 });
 
-  const purchases_summary = await Purchases.aggregate([
-    {
-      $group: {
-        _id: {
-          product_id: "$product_id",
-        },
-        nett_mts_total: {
-          $sum: "$nett_mts",
-        },
-        purchase_amount_total: {
-          $sum: "$purchase_amount",
-        },
-      },
-    },
-  ]);
+  const purchases_summary = await Purchases.aggregate([{ $group: { _id: { product_id: "$product_id" }, nett_mts_total: { $sum: "$nett_mts" }, purchase_amount_total: { $sum: "$purchase_amount" } } }]);
 
   const purchases = await Purchases.aggregate([{ $match: { dispatched: false, goods_return: false } }, { $group: { _id: "$product_id", sum: { $sum: "$nett_mts" } } }]);
 
   const materialReceipts = await MaterialReceipts.aggregate([
     { $unwind: "$transactions" },
-    {
-      $group: {
-        _id: {
-          workshop_id: "$workshop_id",
-          product_id: "$transactions.product_id",
-        },
-        total_nett_qty: { $sum: "$transactions.nett_qty" },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        workshop_id: "$_id.workshop_id",
-        product_id: "$_id.product_id",
-        total_nett_qty: 1,
-      },
-    },
+    { $group: { _id: { workshop_id: "$workshop_id", product_id: "$transactions.product_id" }, total_nett_qty: { $sum: "$transactions.nett_qty" } } },
+    { $project: { _id: 0, workshop_id: "$_id.workshop_id", product_id: "$_id.product_id", total_nett_qty: 1 } },
   ]);
 
   const materialIssues = await MaterialIssue.aggregate([
     { $unwind: "$transactions" },
-    {
-      $group: {
-        _id: {
-          workshop_id: "$workshop_id",
-          to_workshop_id: "$to_workshop_id",
-          product_id: "$transactions.product_id",
-        },
-        total_nett_qty: { $sum: "$transactions.nett_qty" },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        workshop_id: "$_id.workshop_id",
-        to_workshop_id: "$_id.to_workshop_id",
-        product_id: "$_id.product_id",
-        total_nett_qty: 1,
-      },
-    },
+    { $group: { _id: { workshop_id: "$workshop_id", to_workshop_id: "$to_workshop_id", product_id: "$transactions.product_id" }, total_nett_qty: { $sum: "$transactions.nett_qty" } } },
+    { $project: { _id: 0, workshop_id: "$_id.workshop_id", to_workshop_id: "$_id.to_workshop_id", product_id: "$_id.product_id", total_nett_qty: 1 } },
   ]);
 
   let records = [];
