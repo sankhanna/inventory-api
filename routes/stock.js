@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Purchases = require("../models/Purchases");
 const Products = require("../models/Product");
-const findProduct = require("../services/findProduct");
+const findProductName = require("../services/findProductName");
 const MaterialReceipts = require("../models/MaterialReceipts");
 const MaterialIssue = require("../models/MaterialIssue");
 
@@ -97,14 +97,12 @@ router.get("/getPendingStock", async (req, res) => {
   await Promise.all(
     products.map(async (itm) => {
       let current_product_id = itm._id;
-      let product = findProduct(products, current_product_id);
       const transitPurchase = await Purchases.find({ dispatched: true, product_id: current_product_id });
 
       let avg_purchase_rate = findAvgPurchaseRate(purchases_summary, current_product_id);
       let obj = {
         _id: current_product_id,
-        name: product.product_name,
-        prefferd_product: product.prefferd_product,
+        name: findProductName(products, current_product_id),
         avg_purchase_rate: avg_purchase_rate,
         pending_purchase_qty: 0,
         transit_qty: 0,
