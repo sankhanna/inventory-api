@@ -115,6 +115,10 @@ router.post("/", async (req, res) => {
     return res.status(BADREQUEST).send(addMarkup(0, result.error.message, {}));
   }
 
+  if (result.value.workshop_id === result.value.to_workshop_id) {
+    return res.status(BADREQUEST).send(addMarkup(0, "Source and destination workshop cannot be same.", {}));
+  }
+
   error_found = false;
   result.value.transactions.map((item) => {
     if (formString(item.material_receipt_ref_str) == "" && formString(item.material_receipt_ref_id) == "" && result.value.workshop_id == "10") {
