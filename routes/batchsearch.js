@@ -6,7 +6,7 @@ const findAccountName = require("../services/findAccountName");
 const findWorkshopName = require("../services/findWorkshopName");
 const findProductName = require("../services/findProductName");
 const MaterialIssue = require("../models/MaterialIssue");
-const Loadworkshops = require("../services/workshops");
+const WorkshopsModel = require("../models/Workshops");
 const UserModel = require("../models/Users");
 const findUserName = require("../services/findUserName");
 
@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 
   const accounts = await Accounts.find();
   const products = await Products.find();
-  const workshops = Loadworkshops();
+  const workshops = await WorkshopsModel.find({}).sort({ _id: 1 });
   let materialissue = await MaterialIssue.find({ $or: [{ "transactions.batch_no": main_search }] });
   const users = await UserModel.find();
 

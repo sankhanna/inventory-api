@@ -4,7 +4,7 @@ const router = express.Router();
 const MaterialReceipts = require("../models/MaterialReceipts");
 const MaterialIssue = require("../models/MaterialIssue");
 const verifyID = require("../utils/verify");
-const Loadworkshops = require("../services/workshops");
+const WorkshopsModel = require("../models/Workshops");
 const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
 const findAccountName = require("../services/findAccountName");
@@ -40,7 +40,7 @@ function validation_schema() {
 router.get("/", async (req, res) => {
   const accounts = await Accounts.find();
   const products = await Products.find();
-  const workshops = Loadworkshops();
+  const workshops = await WorkshopsModel.find({}).sort({ _id: -1 });
   const materialreceipt = await MaterialReceipts.find().sort({ _id: -1 });
   const users = await UserModel.find();
 
