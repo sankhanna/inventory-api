@@ -1,32 +1,41 @@
 const express = require("express");
 const router = express.Router();
-const Accounts = require("../models/Accounts");
-const Products = require("../models/Product");
-const findAccountName = require("../services/findAccountName");
-const findWorkshopName = require("../services/findWorkshopName");
-const findProductName = require("../services/findProductName");
 const MaterialIssue = require("../models/MaterialIssue");
-const WorkshopsModel = require("../models/Workshops");
-const UserModel = require("../models/Users");
-const findUserName = require("../services/findUserName");
 
 router.get("/", async (req, res) => {
   main_search = req.query.main_search;
 
-  const accounts = await Accounts.find();
-  const products = await Products.find();
-  const workshops = await WorkshopsModel.find({}).sort({ _id: 1 });
-  let materialissue = await MaterialIssue.find({ $or: [{ "transactions.batch_no": main_search }] });
-  const users = await UserModel.find();
+  const filters = { "transactions.batch_no": main_search };
+
+  const pipeLine = [
+    { $match: filters },
+    { $addFields: { transactions: { $filter: { input: "$transactions", as: "transaction", cond: { $eq: ["$$transaction.batch_no", main_search] } } } } },
+    { $lookup: { from: "products", localField: "transactions.product_id", foreignField: "_id", as: "product_info" } },
+    { $unwind: { path: "$product_info", preserveNullAndEmptyArrays: true } },
+    { $addFields: { "transactions.product_name": "$product_info.product_name" } },
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "workshops", localField: "workshop_id", foreignField: "_id", as: "workshop" } },
+    { $lookup: { from: "workshops", localField: "to_workshop_id", foreignField: "_id", as: "toworkshop" } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$workshop", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$toworkshop", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $project: { product_info: 0 } },
+    { $sort: { transaction_date: -1 } },
+  ];
+
+  const materialissue = await MaterialIssue.aggregate(pipeLine);
 
   let records = [];
   records = materialissue.map((itm) => {
-    workshop_name = findWorkshopName(workshops, itm.workshop_id);
-    to_workshop_name = findWorkshopName(workshops, itm.to_workshop_id);
-    account_name = findAccountName(accounts, itm.account_id);
-
-    change_user_name = findUserName(users, itm.change_user_id);
-    create_user_name = findUserName(users, itm.create_user_id);
+    workshop_name = itm.workshop?.name || "";
+    to_workshop_name = itm.toworkshop?.name || "";
+    account_name = itm.account?.account_name || "";
+    change_user_name = itm.createUser?.complete_name | "";
+    create_user_name = itm.changeUser?.complete_name | "";
 
     obj = {
       _id: itm._id,
@@ -43,30 +52,8 @@ router.get("/", async (req, res) => {
       account_name,
       change_user_name,
       create_user_name,
-      transactions: [],
+      transactions: itm.transactions,
     };
-
-    trn = [];
-    itm.transactions.map((item) => {
-      if (item.batch_no == main_search) {
-        product_name = findProductName(products, item.product_id);
-
-        trn.push({
-          _id: item._id,
-          product_name,
-          product_id: item.product_id,
-          pcs: item.pcs,
-          qty: item.qty,
-          short: item.short,
-          nett_qty: item.nett_qty,
-          value: item.value,
-          batch_no: item.batch_no,
-          material_receipt_ref_id: item.material_receipt_ref_id,
-          material_receipt_ref_str: item.material_receipt_ref_str,
-        });
-      }
-    });
-    obj.transactions = trn;
 
     return obj;
   });
