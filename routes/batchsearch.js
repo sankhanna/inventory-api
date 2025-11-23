@@ -25,6 +25,8 @@ router.get("/", async (req, res) => {
       $group: {
         _id: "$_id",
         transactions: { $push: "$transactions" },
+        create_date: { $first: "$create_date" },
+        change_date: { $first: "$change_date" },
         change_user_id: { $first: "$change_user_id" },
         create_user_id: { $first: "$create_user_id" },
         transaction_date: { $first: "$transaction_date" },
