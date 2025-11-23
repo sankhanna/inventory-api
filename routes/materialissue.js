@@ -4,14 +4,8 @@ const router = express.Router();
 const MaterialIssue = require("../models/MaterialIssue");
 const MaterialReceipts = require("../models/MaterialReceipts");
 const verifyID = require("../utils/verify");
-const WorkshopsModel = require("../models/Workshops");
-const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
-const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
-const findWorkshopName = require("../services/findWorkshopName");
-const UserModel = require("../models/Users");
-const findUserName = require("../services/findUserName");
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -41,20 +35,32 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const accounts = await Accounts.find();
   const products = await Products.find();
-  const workshops = await WorkshopsModel.find({}).sort({ _id: 1 });
-  const materialissue = await MaterialIssue.find().sort({ transaction_date: -1 });
-  const users = await UserModel.find();
+
+  const pipeLine = [
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "workshops", localField: "workshop_id", foreignField: "_id", as: "workshop" } },
+    { $lookup: { from: "workshops", localField: "to_workshop_id", foreignField: "_id", as: "toworkshop" } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$workshop", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$toworkshop", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $project: { product_info: 0 } },
+    { $sort: { transaction_date: 1 } },
+  ];
+
+  const materialissue = await MaterialIssue.aggregate(pipeLine);
 
   let records = [];
   records = materialissue.map((item) => {
-    account_name = findAccountName(accounts, item.account_id);
-    workshop_name = findWorkshopName(workshops, item.workshop_id);
-    to_workshop_name = findWorkshopName(workshops, item.to_workshop_id);
-
-    change_user_name = findUserName(users, item.change_user_id);
-    create_user_name = findUserName(users, item.create_user_id);
+    workshop_name = item.workshop?.name || "";
+    to_workshop_name = item.toworkshop?.name || "";
+    account_name = item.account?.account_name || "";
+    create_user_name = item.createUser?.complete_name || "";
+    change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatMaterialIssueRow(item, workshop_name, to_workshop_name, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -74,36 +80,6 @@ router.get("/MaterialIssueDetail/:id", async (req, res) => {
   let mi = await MaterialIssue.findOne({ _id: req.params.id });
   if (mi == null) return res.status(BADREQUEST).send(addMarkup(0, "entry not found", { materialissue: {} }));
 
-  // transactions = [];
-  // for ( counter = 0; counter < mi.transactions.length; counter++){
-  //     ref_detail = "";
-  //     ref_tran_date = "";
-  //     const mr = await find_reference(mi.transactions[counter].material_receipt_ref_id);
-  //     mr.map((it) => {
-  //         ref_tran_date = it.transaction_date;
-  //         let transactions = it.transactions;
-  //         transactions.map((item) => {
-  //             if ( JSON.stringify(item._id) == JSON.stringify(mi.transactions[counter].material_receipt_ref_id)){
-  //                 ref_detail = item.batch_no;
-  //             }
-  //         });
-  //     })
-  //     const newTran =  { ...{ref_detail} , ...{ref_tran_date} , ...{ _id: mi.transactions[counter]._id ,
-  //         material_receipt_ref_id: mi.transactions[counter].material_receipt_ref_id ,
-  //         product_id: mi.transactions[counter].product_id ,
-  //         qty: mi.transactions[counter].qty ,
-  //         short: mi.transactions[counter].short ,
-  //         nett_qty: mi.transactions[counter].nett_qty ,
-  //         rate: mi.transactions[counter].rate ,
-  //         value: mi.transactions[counter].value ,
-  //         batch_no: mi.transactions[counter].batch_no ,
-  //         pcs: mi.transactions[counter].pcs
-  //     } };
-  //     transactions.push(newTran);
-  // }
-  // let returnObj = { _id: mi._id , workshop_id: mi.workshop_id , to_workshop_id: mi.to_workshop_id ,
-  //         transaction_date: mi.transaction_date , transaction_type: mi.transaction_type , create_date: mi.create_date ,
-  //         change_date: mi.change_date , create_user_id: mi.create_user_id , change_user_id: mi.change_user_id , transactions: transactions };
   return res.status(SUCCESS).send(addMarkup(1, "material issue entry Obtained Successfully", { materialissue: mi }));
 });
 

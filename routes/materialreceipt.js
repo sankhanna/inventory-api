@@ -4,14 +4,8 @@ const router = express.Router();
 const MaterialReceipts = require("../models/MaterialReceipts");
 const MaterialIssue = require("../models/MaterialIssue");
 const verifyID = require("../utils/verify");
-const WorkshopsModel = require("../models/Workshops");
-const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
-const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
-const findWorkshopName = require("../services/findWorkshopName");
-const UserModel = require("../models/Users");
-const findUserName = require("../services/findUserName");
 const mongoose = require("mongoose");
 
 function validation_schema() {
@@ -38,19 +32,28 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const accounts = await Accounts.find();
   const products = await Products.find();
-  const workshops = await WorkshopsModel.find({}).sort({ _id: -1 });
-  const materialreceipt = await MaterialReceipts.find().sort({ _id: -1 });
-  const users = await UserModel.find();
 
-  records = [];
-  records = materialreceipt.map((item) => {
-    account_name = findAccountName(accounts, item.account_id);
-    workshop_name = findWorkshopName(workshops, item.workshop_id);
+  const pipeLine = [
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "workshops", localField: "workshop_id", foreignField: "_id", as: "workshop" } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$workshop", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $project: { product_info: 0 } },
+    { $sort: { _id: 1 } },
+  ];
 
-    change_user_name = findUserName(users, item.change_user_id);
-    create_user_name = findUserName(users, item.create_user_id);
+  const materialreceipt = await MaterialReceipts.aggregate(pipeLine);
+
+  const records = materialreceipt.map((item) => {
+    workshop_name = item.workshop?.name || "";
+    account_name = item.account?.account_name || "";
+    create_user_name = item.createUser?.complete_name || "";
+    change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatMaterialReceiptRow(item, workshop_name, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -70,41 +73,6 @@ router.get("/MaterialReceiptDetail/:id", async (req, res) => {
 
 router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => {
   if (verifyID(req.params.productID) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { materialreceipts: [] }));
-
-  // const materialreceipt = await MaterialReceipts.find({ workshop_id: req.params.wareHouse, transactions: { $elemMatch: { product_id: req.params.productID } } });
-
-  // let receipt_total = 0;
-  // let all_records = [];
-  // materialreceipt.map((item) => {
-  //   transactions = item.transactions;
-  //   transactions.map((itm) => {
-  //     if (CO(itm.product_id) == CO(req.params.productID)) {
-  //       all_records.push({ _id: itm._id, product_id: itm.product_id, transaction_date: item.transaction_date, batch_no: itm.batch_no, nett_qty: itm.nett_qty, already_issued: 0, balance: itm.nett_qty, value: itm.value });
-  //       receipt_total += itm.nett_qty;
-  //     }
-  //   });
-  // });
-
-  // let issue_total = 0;
-  // let records = [];
-  // await Promise.all(
-  //   all_records.map(async (item) => {
-  //     let total_issued = 0;
-  //     const materialissue = await MaterialIssue.find({ transactions: { $elemMatch: { material_receipt_ref_id: item._id } } }).sort({ _id: 1 });
-  //     materialissue.map((ite) => {
-  //       let transactions = ite.transactions;
-  //       transactions.map((itm) => {
-  //         if (CO(itm.material_receipt_ref_id) == CO(item._id)) {
-  //           total_issued += itm.nett_qty;
-  //         }
-  //       });
-  //     });
-  //     item.already_issued = total_issued;
-  //     item.balance = item.nett_qty - item.already_issued;
-  //     issue_total += item.already_issued;
-  //     records.push(item);
-  //   })
-  // );
 
   const records = await MaterialReceipts.aggregate([
     {

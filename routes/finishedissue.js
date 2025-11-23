@@ -46,8 +46,8 @@ router.get("/", async (req, res) => {
   const records = [];
   records = finsihedissue.map((item) => {
     account_name = itm.account?.account_name || "";
-    create_user_name = itm.createUser?.complete_name | "";
-    change_user_name = itm.changeUser?.complete_name | "";
+    create_user_name = itm.createUser?.complete_name || "";
+    change_user_name = itm.changeUser?.complete_name || "";
 
     const nitem = formatFinishedIssue(item, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
