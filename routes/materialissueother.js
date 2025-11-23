@@ -5,10 +5,7 @@ const MaterialIssueOther = require("../models/MaterialIssueothers");
 const verifyID = require("../utils/verify");
 const Loadworkshops = require("../services/productionworkshops");
 const Products = require("../models/Product");
-const findProductName = require("../services/findProductName");
 const findWorkshopName = require("../services/findWorkshopName");
-const UserModel = require("../models/Users");
-const findUserName = require("../services/findUserName");
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -37,12 +34,35 @@ router.get("/", async (req, res) => {
 
   const products = await Products.find();
   const workshops = Loadworkshops();
-  const materialissueother = await MaterialIssueOther.find({ transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } }).sort({ transaction_date: -1 });
-  const users = await UserModel.find();
+  const filters = { transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
+  const pipeLine = [
+    { $match: filters },
+    { $unwind: { path: "$transactions", preserveNullAndEmptyArrays: true } },
+    { $lookup: { from: "products", localField: "transactions.product_id", foreignField: "_id", as: "product_info" } },
+    { $unwind: { path: "$product_info", preserveNullAndEmptyArrays: true } },
+    { $addFields: { "transactions.product_name": "$product_info.product_name" } },
+    {
+      $group: {
+        _id: "$_id",
+        transactions: { $push: "$transactions" },
+        change_user_id: { $first: "$change_user_id" },
+        create_user_id: { $first: "$create_user_id" },
+        transaction_date: { $first: "$transaction_date" },
+        transaction_type: { $first: "$transaction_type" },
+        workshop_id: { $first: "$workshop_id" },
+        to_workshop_id: { $first: "$to_workshop_id" },
+      },
+    },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $sort: { transaction_date: -1 } },
+  ];
+  const materialissueother = await MaterialIssueOther.aggregate(pipeLine);
 
-  records = [];
-  materialissueother.map((item) => {
-    process_record = true;
+  const records = materialissueother.map((item) => {
+    let process_record = true;
 
     if (filter_workshop_id != "") {
       process_record = item.to_workshop_id == filter_workshop_id ? true : false;
@@ -52,12 +72,12 @@ router.get("/", async (req, res) => {
       workshop_name = findWorkshopName(workshops, item.workshop_id);
       to_workshop_name = findWorkshopName(workshops, item.to_workshop_id);
 
-      change_user_name = findUserName(users, item.change_user_id);
-      create_user_name = findUserName(users, item.create_user_id);
+      create_user_name = item.createUser?.complete_name || "";
+      change_user_name = item.changeUser?.complete_name || "";
 
       const nitem = formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
 
-      records.push(nitem);
+      return nitem;
     }
   });
 
@@ -141,16 +161,7 @@ router.post("/", async (req, res) => {
 });
 
 function formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, products, change_user_name, change_date, create_user_name, create_date) {
-  trn = [];
-  transactions = item.transactions;
-  trn = transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
-    return { product_id: tm.product_id, product_name, qty: tm.qty, rate: tm.rate, value: tm.value };
-  });
-
-  const it = { _id: item._id, workshop_id: item.workshop_id, to_workshop_id: item.to_workshop_id, transaction_type: item.transaction_type, transaction_date: item.transaction_date, transactions: item.transactions };
-  const nitem = { ...{ workshop_name, to_workshop_name, change_user_name, change_date, create_user_name, create_date }, ...it, transactions: trn };
-
+  const nitem = { ...item, workshop_name, to_workshop_name, change_user_name, change_date, create_user_name, create_date };
   return nitem;
 }
 
