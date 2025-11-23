@@ -4,7 +4,6 @@ const router = express.Router();
 const MaterialIssueOther = require("../models/MaterialIssueothers");
 const verifyID = require("../utils/verify");
 const Loadworkshops = require("../services/productionworkshops");
-const Products = require("../models/Product");
 const findWorkshopName = require("../services/findWorkshopName");
 
 function validation_schema() {
@@ -32,7 +31,6 @@ router.get("/", async (req, res) => {
   end_date = req.query.end_date;
   filter_workshop_id = req.query.filter_workshop_id;
 
-  const products = await Products.find();
   const workshops = Loadworkshops();
   const filters = { transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
   const pipeLine = [
@@ -57,7 +55,7 @@ router.get("/", async (req, res) => {
     { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
     { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
-    { $sort: { transaction_date: -1 } },
+    { $sort: { transaction_date: -1, _id: -1 } },
   ];
   const materialissueother = await MaterialIssueOther.aggregate(pipeLine);
 
@@ -75,7 +73,7 @@ router.get("/", async (req, res) => {
       create_user_name = item.createUser?.complete_name || "";
       change_user_name = item.changeUser?.complete_name || "";
 
-      const nitem = formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
+      const nitem = formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, change_user_name, item.change_date, create_user_name, item.create_date);
 
       return nitem;
     }
@@ -160,7 +158,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-function formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, products, change_user_name, change_date, create_user_name, create_date) {
+function formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, change_user_name, change_date, create_user_name, create_date) {
   const nitem = { ...item, workshop_name, to_workshop_name, change_user_name, change_date, create_user_name, create_date };
   return nitem;
 }
