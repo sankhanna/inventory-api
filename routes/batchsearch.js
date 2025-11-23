@@ -34,8 +34,8 @@ router.get("/", async (req, res) => {
     workshop_name = itm.workshop?.name || "";
     to_workshop_name = itm.toworkshop?.name || "";
     account_name = itm.account?.account_name || "";
-    change_user_name = itm.createUser?.complete_name | "";
-    create_user_name = itm.changeUser?.complete_name | "";
+    create_user_name = itm.createUser?.complete_name | "";
+    change_user_name = itm.changeUser?.complete_name | "";
 
     obj = {
       _id: itm._id,

@@ -3,12 +3,8 @@ const express = require("express");
 const router = express.Router();
 const FinishedIssue = require("../models/FinishedIssue");
 const verifyID = require("../utils/verify");
-const Accounts = require("../models/Accounts");
 const Products = require("../models/Product");
-const findAccountName = require("../services/findAccountName");
 const findProductName = require("../services/findProductName");
-const UserModel = require("../models/Users");
-const findUserName = require("../services/findUserName");
 
 function validation_schema() {
   const transaction = Joi.object().keys({
@@ -32,16 +28,26 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  const accounts = await Accounts.find();
   const products = await Products.find();
-  const finsihedissue = await FinishedIssue.find().sort({ transaction_date: -1 });
-  const users = await UserModel.find();
 
-  records = [];
+  const pipeLine = [
+    { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
+    { $lookup: { from: "users", localField: "change_user_id", foreignField: "id", as: "changeUser" } },
+    { $lookup: { from: "users", localField: "create_user_id", foreignField: "id", as: "createUser" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
+    { $sort: { transaction_date: 1 } },
+    { $project: { product_info: 0 } },
+  ];
+
+  const finsihedissue = await FinishedIssue.aggregate(pipeLine);
+
+  const records = [];
   records = finsihedissue.map((item) => {
-    account_name = findAccountName(accounts, item.account_id);
-    change_user_name = findUserName(users, item.change_user_id);
-    create_user_name = findUserName(users, item.create_user_id);
+    account_name = itm.account?.account_name || "";
+    create_user_name = itm.createUser?.complete_name | "";
+    change_user_name = itm.changeUser?.complete_name | "";
 
     const nitem = formatFinishedIssue(item, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
