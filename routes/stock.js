@@ -10,18 +10,18 @@ router.get("/checkStockWI", async (req, res) => {
   const materialreceipt = await MaterialReceipts.find();
   const materialissue = await MaterialIssue.find({ workshop_id: 10 });
 
-  without_reference = [];
+  const without_reference = [];
   materialissue.map((item) => {
-    transactions = item.transactions;
-    workshop_id = item.workshop_id;
+    const transactions = item.transactions;
+    const workshop_id = item.workshop_id;
     transactions.map((row) => {
-      current_product_id = row.product_id;
-      current_record_id = row._id;
-      nett_qty = row.nett_qty;
-      material_receipt_ref_id = row.material_receipt_ref_id;
+      const current_product_id = row.product_id;
+      const current_record_id = row._id;
+      const nett_qty = row.nett_qty;
+      const material_receipt_ref_id = row.material_receipt_ref_id;
 
       materialreceipt.map((item) => {
-        trans = item.transactions;
+        const trans = item.transactions;
         trans.map((mrrow) => {
           if (CO(mrrow._id) == CO(material_receipt_ref_id)) {
             if (CO(current_product_id) != CO(mrrow.product_id)) without_reference.push(row);
@@ -37,20 +37,20 @@ router.get("/checkStock", async (req, res) => {
   const materialreceipt = await MaterialReceipts.find();
   const materialissue = await MaterialIssue.find();
 
-  without_reference = [];
+  let without_reference = [];
   materialreceipt.map((item) => {
-    transactions = item.transactions;
-    workshop_id = item.workshop_id;
+    const transactions = item.transactions;
+    const workshop_id = item.workshop_id;
     if (workshop_id == "10") {
       transactions.map((row) => {
-        current_product_id = row.product_id;
-        current_record_id = row._id;
-        nett_qty = row.nett_qty;
+        let current_product_id = row.product_id;
+        let current_record_id = row._id;
+        let nett_qty = row.nett_qty;
 
         materialissue.map((item) => {
-          trans = item.transactions;
-          workshop_id = item.workshop_id;
-          to_workshop_id = item.to_workshop_id;
+          const trans = item.transactions;
+          const workshop_id = item.workshop_id;
+          const to_workshop_id = item.to_workshop_id;
           trans.map((row) => {
             if (CO(current_record_id) == CO(row.material_receipt_ref_id)) {
               nett_qty = nett_qty - row.nett_qty;

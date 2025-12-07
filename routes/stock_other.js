@@ -69,27 +69,27 @@ async function findstock(current_product_id, workshop_id, as_on_date) {
 }
 
 router.get("/getPendingStock", async (req, res) => {
-  product_id = req.query.product_id;
-  workshop_id = req.query.workshop_id;
-  tran_date = req.query.tran_date;
+  const product_id = req.query.product_id;
+  const workshop_id = req.query.workshop_id;
+  const tran_date = req.query.tran_date;
   const products = await Products.find({ _id: req.params.id });
 
-  obj = await findstock(product_id, workshop_id, tran_date);
+  const obj = await findstock(product_id, workshop_id, tran_date);
 
   return res.status(SUCCESS).send(addMarkup(1, "Purchases Obtained Successfully", { pending_stock: obj }));
 });
 
 router.get("/getCosting", async (req, res) => {
-  start_date = req.query.start_date;
-  end_date = req.query.end_date;
+  const start_date = req.query.start_date;
+  const end_date = req.query.end_date;
   const workshops = Loadworkshops();
 
   const mio = await MIO.find({ transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } });
 
   let result = [];
   mio.map((item) => {
-    workshop_name = findWorkshopName(workshops, item.to_workshop_id);
-    total_issue_value = 0;
+    const workshop_name = findWorkshopName(workshops, item.to_workshop_id);
+    let total_issue_value = 0;
 
     item.transactions.map((i) => {
       total_issue_value += i.value;
@@ -113,21 +113,21 @@ router.get("/getCosting", async (req, res) => {
 });
 
 router.get("/getPendingStockAll", async (req, res) => {
-  workshop_id = req.query.workshop_id;
-  tran_date = req.query.tran_date;
+  const workshop_id = req.query.workshop_id;
+  const tran_date = req.query.tran_date;
   const products = await Products.find({ product_group: "Chemical" });
 
   let result = [];
-  for (counter = 0; counter < products.length; counter++) {
-    obj = await findstock(products[counter]._id, workshop_id, tran_date);
+  for (let counter = 0; counter < products.length; counter++) {
+    const obj = await findstock(products[counter]._id, workshop_id, tran_date);
     result.push({ _id: obj.current_product_id, qty: obj.qty, lpp: obj.lpp, product_name: products[counter].product_name });
   }
   return res.status(SUCCESS).send(addMarkup(1, "Purchases Obtained Successfully", { pending_stock: result }));
 });
 
 router.get("/get-consumption-summary", async (req, res) => {
-  startDate = req.query.startDate;
-  endDate = req.query.endDate;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
 
   const sd = moment(startDate).startOf("day").toDate();
   const ed = moment(endDate).endOf("day").toDate();
@@ -157,7 +157,7 @@ router.get("/get-stock-report", async (req, res) => {
 
   let result = [];
   for (let counter = 0; counter < products.length; counter++) {
-    product = products[counter];
+    const product = products[counter];
 
     let opening = 0;
     let purchases = 0;
