@@ -44,18 +44,18 @@ function purchase_validation_schema() {
 router.get("/", async (req, res) => {
   const accounts = await AccountsModel.find({});
 
-  filter_product_id = req.query.filter_product_id;
-  filter_account_id = req.query.filter_account_id;
-  filter_agent_id = req.query.filter_agent_id;
-  start_date = req.query.start_date;
-  end_date = req.query.end_date;
-  purchase_start_date = req.query.purchase_start_date;
-  purchase_end_date = req.query.purchase_end_date;
-  filter_favour_id = req.query.filter_favour_id;
-  hide_already_dispatched = req.query.hide_already_dispatched;
-  dispatch_date = req.query.dispatch_date;
-  hide_goods_return = req.query.hide_goods_return;
-  sort_by = req.query.sort_by;
+  const filter_product_id = req.query.filter_product_id;
+  const filter_account_id = req.query.filter_account_id;
+  const filter_agent_id = req.query.filter_agent_id;
+  const start_date = req.query.start_date;
+  const end_date = req.query.end_date;
+  const purchase_start_date = req.query.purchase_start_date;
+  const purchase_end_date = req.query.purchase_end_date;
+  const filter_favour_id = req.query.filter_favour_id;
+  const hide_already_dispatched = req.query.hide_already_dispatched;
+  const dispatch_date = req.query.dispatch_date;
+  const hide_goods_return = req.query.hide_goods_return;
+  const sort_by = req.query.sort_by;
 
   let filter = {};
   let records = [];
@@ -295,7 +295,7 @@ router.post("/", async (req, res) => {
   let duplicate_found1 = false;
   const account_purchase = await Purchases.find({ account_id: result.value.account_id });
   account_purchase.map((item) => {
-    db_bill_date = getDate(item.bill_date);
+    const db_bill_date = getDate(item.bill_date);
     if (formString(result.value.purchase_id) == "") {
       if (item.gr_number.toLowerCase() == result.value.gr_number.toLowerCase()) {
         duplicate_found = true;
