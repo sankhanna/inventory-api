@@ -10,10 +10,4 @@ function find_product_name(products, id) {
   return return_value;
 }
 
-// function (products, id) {
-//   return_value = "";
-//   products.map((item) => (JSON.stringify(item._id) == JSON.stringify(id) ? (return_value = item.product_name) : ""));
-//   return return_value;
-// }
-
 module.exports = find_product_name;
