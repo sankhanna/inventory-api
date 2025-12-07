@@ -210,9 +210,8 @@ router.post("/", async (req, res) => {
       discount: result.value.discount,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
-    xtransactions = transactions.map((item) => {
+    const transactions = result.value.transactions;
+    const xtransactions = transactions.map((item) => {
       return {
         product_id: item.product_id,
         department_id: item.department_id,
@@ -276,8 +275,8 @@ router.post("/", async (req, res) => {
       }
     });
 
-    for (counter = 0; counter < PurchaseOther.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < PurchaseOther.transactions.length; counter++) {
+      const transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(PurchaseOther.transactions[counter]._id)) {
