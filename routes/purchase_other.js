@@ -254,8 +254,7 @@ router.post("/", async (req, res) => {
     PurchaseOther.total_amount = result.value.total_amount;
     PurchaseOther.discount = result.value.discount;
 
-    transactions = result.value.transactions;
-    transactions.map((item) => {
+    result.value.transactions.map((item) => {
       if (item.row_record_id == undefined) {
         PurchaseOther.transactions.push({
           product_id: item.product_id,

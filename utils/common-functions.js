@@ -1,17 +1,17 @@
 function _formatMonthToNumber(monthString) {
-  monthString = monthString.toUpperCase();
-  if (monthString === "JAN") return "01";
-  if (monthString === "FEB") return "02";
-  if (monthString === "MAR") return "03";
-  if (monthString === "APR") return "04";
-  if (monthString === "MAY") return "05";
-  if (monthString === "JUN") return "06";
-  if (monthString === "JUL") return "07";
-  if (monthString === "AUG") return "08";
-  if (monthString === "SEP") return "09";
-  if (monthString === "OCT") return "10";
-  if (monthString === "NOV") return "11";
-  if (monthString === "DEC") return "12";
+  const monthStringUpperCase = monthString.toUpperCase();
+  if (monthStringUpperCase === "JAN") return "01";
+  if (monthStringUpperCase === "FEB") return "02";
+  if (monthStringUpperCase === "MAR") return "03";
+  if (monthStringUpperCase === "APR") return "04";
+  if (monthStringUpperCase === "MAY") return "05";
+  if (monthStringUpperCase === "JUN") return "06";
+  if (monthStringUpperCase === "JUL") return "07";
+  if (monthStringUpperCase === "AUG") return "08";
+  if (monthStringUpperCase === "SEP") return "09";
+  if (monthStringUpperCase === "OCT") return "10";
+  if (monthStringUpperCase === "NOV") return "11";
+  if (monthStringUpperCase === "DEC") return "12";
 }
 
 const jsonStringify = (data) => {

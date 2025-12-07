@@ -69,7 +69,6 @@ router.get("/", async (req, res) => {
     if (process_record) {
       let workshop_name = findWorkshopName(workshops, item.workshop_id);
       let to_workshop_name = findWorkshopName(workshops, item.to_workshop_id);
-
       let create_user_name = item.createUser?.complete_name || "";
       let change_user_name = item.changeUser?.complete_name || "";
 
