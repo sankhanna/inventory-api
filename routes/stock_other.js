@@ -86,7 +86,7 @@ router.get("/getCosting", async (req, res) => {
 
   const mio = await MIO.find({ transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } });
 
-  result = [];
+  let result = [];
   mio.map((item) => {
     workshop_name = findWorkshopName(workshops, item.to_workshop_id);
     total_issue_value = 0;
@@ -98,7 +98,7 @@ router.get("/getCosting", async (req, res) => {
     result.push({ to_workshop_id: item.to_workshop_id, workshop_name: workshop_name, total_issue_value: total_issue_value });
   });
 
-  result_final = [];
+  let result_final = [];
 
   result.forEach(function (a) {
     if (!this[a.workshop_name]) {
@@ -117,7 +117,7 @@ router.get("/getPendingStockAll", async (req, res) => {
   tran_date = req.query.tran_date;
   const products = await Products.find({ product_group: "Chemical" });
 
-  result = [];
+  let result = [];
   for (counter = 0; counter < products.length; counter++) {
     obj = await findstock(products[counter]._id, workshop_id, tran_date);
     result.push({ _id: obj.current_product_id, qty: obj.qty, lpp: obj.lpp, product_name: products[counter].product_name });
