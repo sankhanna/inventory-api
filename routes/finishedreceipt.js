@@ -42,8 +42,7 @@ router.get("/", async (req, res) => {
 
   const finishedreceipt = await FinishedReceipts.aggregate().sort({ _id: -1 });
 
-  const records = [];
-  records = finishedreceipt.map((item) => {
+  const records = finishedreceipt.map((item) => {
     let account_name = item.account?.account_name || "";
     let create_user_name = item.createUser?.complete_name || "";
     let change_user_name = item.changeUser?.complete_name || "";
