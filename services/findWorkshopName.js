@@ -1,5 +1,5 @@
 function find_workshop_name ( workshops , id ){
-    return_value = "";
+    let return_value = "";
     workshops.map((item) => item._id == id ? return_value = item.name : "" );
     return return_value;
 }
