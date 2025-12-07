@@ -43,11 +43,11 @@ router.get("/", async (req, res) => {
 
   const finsihedissue = await FinishedIssue.aggregate(pipeLine);
 
-  const records = [];
-  records = finsihedissue.map((item) => {
-    account_name = itm.account?.account_name || "";
-    create_user_name = itm.createUser?.complete_name || "";
-    change_user_name = itm.changeUser?.complete_name || "";
+  
+  const records = finsihedissue.map((item) => {
+    let account_name = item.account?.account_name || "";
+    let create_user_name = item.createUser?.complete_name || "";
+    let change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatFinishedIssue(item, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -85,9 +85,8 @@ router.post("/", async (req, res) => {
       change_user_id: req.headers.user_id,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
-    xtransactions = transactions.map((item) => {
+    const transactions = result.value.transactions;
+    const xtransactions = transactions.map((item) => {
       return { product_id: item.product_id, pcs: item.pcs, qty: item.qty, rate: item.rate, value: item.value };
     });
     finishedissue.transactions = xtransactions;
@@ -100,15 +99,15 @@ router.post("/", async (req, res) => {
     finishedissue.transaction_date = result.value.transaction_date;
     finishedissue.account_id = result.value.account_id;
 
-    transactions = result.value.transactions;
+    let transactions = result.value.transactions;
     transactions.map((item) => {
       if (item.row_record_id == undefined) {
         finishedissue.transactions.push({ product_id: item.product_id, pcs: item.pcs, qty: item.qty, rate: item.rate, value: item.value });
       }
     });
 
-    for (counter = 0; counter < finishedissue.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < finishedissue.transactions.length; counter++) {
+      let transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(finishedissue.transactions[counter]._id)) {
@@ -132,10 +131,9 @@ router.post("/", async (req, res) => {
 });
 
 function formatFinishedIssue(item, account_name, products, change_user_name, change_date, create_user_name, create_date) {
-  trn = [];
-  transactions = item.transactions;
-  trn = transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
+  let transactions = item.transactions;
+  let trn = transactions.map((tm) => {
+    let product_name = findProductName(products, tm.product_id);
     return { product_id: tm.product_id, product_name, pcs: tm.pcs, qty: tm.qty, rate: tm.rate, value: tm.value };
   });
 

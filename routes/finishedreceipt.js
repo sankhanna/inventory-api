@@ -44,9 +44,9 @@ router.get("/", async (req, res) => {
 
   const records = [];
   records = finishedreceipt.map((item) => {
-    account_name = itm.account?.account_name || "";
-    create_user_name = itm.createUser?.complete_name || "";
-    change_user_name = itm.changeUser?.complete_name || "";
+    let account_name = item.account?.account_name || "";
+    let create_user_name = item.createUser?.complete_name || "";
+    let change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatFinishedReceipt(item, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -84,9 +84,8 @@ router.post("/", async (req, res) => {
       change_user_id: req.headers.user_id,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
-    xtransactions = transactions.map((item) => {
+    let transactions = result.value.transactions;
+    const xtransactions = transactions.map((item) => {
       return { product_id: item.product_id, qty: item.qty, pcs: item.pcs, rate: item.rate, value: item.value };
     });
     finishedreceipt.transactions = xtransactions;
@@ -99,15 +98,15 @@ router.post("/", async (req, res) => {
     finishedreceipt.transaction_date = result.value.transaction_date;
     finishedreceipt.account_id = result.value.account_id;
 
-    transactions = result.value.transactions;
+    let transactions = result.value.transactions;
     transactions.map((item) => {
       if (item.row_record_id == undefined) {
         finishedreceipt.transactions.push({ product_id: item.product_id, qty: item.qty, pcs: item.pcs, rate: item.rate, value: item.value });
       }
     });
 
-    for (counter = 0; counter < finishedreceipt.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < finishedreceipt.transactions.length; counter++) {
+      let transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(finishedreceipt.transactions[counter]._id)) {
@@ -131,14 +130,14 @@ router.post("/", async (req, res) => {
 });
 
 function find_finished_cloth_balance_with_detail(start_date, end_date, finishedreceipt, finishedissue, productID) {
-  open_total_qty = 0;
-  tran_total_qty = 0;
-  out_for_job = 0;
+  let open_total_qty = 0;
+  let tran_total_qty = 0;
+  let out_for_job = 0;
 
-  d2 = new Date(start_date);
+  let d2 = new Date(start_date);
   finishedreceipt.map((item) => {
-    transactions = item.transactions;
-    d1 = new Date(item.transaction_date);
+    let transactions = item.transactions;
+    let d1 = new Date(item.transaction_date);
 
     if (d1 < d2) {
       transactions.map((itm) => {
@@ -157,10 +156,10 @@ function find_finished_cloth_balance_with_detail(start_date, end_date, finishedr
     }
   });
 
-  tran_total_qty_issued = 0;
+  let tran_total_qty_issued = 0;
   finishedissue.map((ite) => {
-    transactions = ite.transactions;
-    d1 = new Date(ite.transaction_date);
+    let transactions = ite.transactions;
+    let d1 = new Date(ite.transaction_date);
 
     if (d1 < d2) {
       transactions.map((itm) => {
@@ -179,7 +178,7 @@ function find_finished_cloth_balance_with_detail(start_date, end_date, finishedr
     }
   });
 
-  item = {};
+  let item = {};
 
   item.opening = open_total_qty;
   item.total_receipt = tran_total_qty;
@@ -191,12 +190,12 @@ function find_finished_cloth_balance_with_detail(start_date, end_date, finishedr
 }
 
 function find_finished_cloth_balance(finishedreceipt, finishedissue, productID) {
-  total_qty = 0;
-  total_pcs = 0;
-  total_value = 0;
+  let total_qty = 0;  
+  let total_pcs = 0;
+  let total_value = 0;
 
   finishedreceipt.map((item) => {
-    transactions = item.transactions;
+    let transactions = item.transactions;
     transactions.map((itm) => {
       if (JSON.stringify(itm.product_id) == JSON.stringify(productID)) {
         total_qty += itm.qty;
@@ -206,11 +205,11 @@ function find_finished_cloth_balance(finishedreceipt, finishedissue, productID) 
     });
   });
 
-  total_qty_issued = 0;
-  total_pcs_issued = 0;
-  total_value_issued = 0;
+  let total_qty_issued = 0;
+  let total_pcs_issued = 0;
+  let total_value_issued = 0;
   finishedissue.map((ite) => {
-    transactions = ite.transactions;
+    let transactions = ite.transactions;
     transactions.map((itm) => {
       if (JSON.stringify(itm.product_id) == JSON.stringify(productID)) {
         total_qty -= itm.qty;
@@ -220,7 +219,7 @@ function find_finished_cloth_balance(finishedreceipt, finishedissue, productID) 
     });
   });
 
-  item = {};
+  let item = {};
 
   item.balance = total_qty;
   item.pcs = total_pcs;
@@ -232,8 +231,8 @@ function find_finished_cloth_balance(finishedreceipt, finishedissue, productID) 
 router.get("/PendingFinishedReceipt/:productID", async (req, res) => {
   if (verifyID(req.params.productID) == false) return res.status(BADREQUEST).json(addMarkup(0, "invalid id provided", { FinishedReceipts: [] }));
 
-  start_date = req.query.start_date;
-  end_date = req.query.end_date;
+  let start_date = req.query.start_date;
+  let end_date = req.query.end_date;
 
   const finishedreceipt = await FinishedReceipts.find({ transaction_date: { $lte: new Date(end_date) } });
   const finishedissue = await FinishedIssue.find({ transaction_date: { $lte: new Date(end_date) } });
@@ -246,13 +245,13 @@ router.get("/PendingFinishedReceipt/:productID", async (req, res) => {
 router.get("/GetStatementOfBalance", async (req, res) => {
   const all_products = await Products.find();
 
-  start_date = req.query.start_date;
-  end_date = req.query.end_date;
+  let start_date = req.query.start_date;
+  let end_date = req.query.end_date;
 
   const finishedreceipt = await FinishedReceipts.find({ transaction_date: { $lte: new Date(end_date) } });
   const finishedissue = await FinishedIssue.find({ transaction_date: { $lte: new Date(end_date) } });
 
-  result = [];
+  let result = [];
   await Promise.all(
     all_products.map(async (item) => {
       if (item.product_group == "Finished Cloth") {
@@ -270,12 +269,12 @@ router.get("/GetJobPartyWiseBalance/:accountID", async (req, res) => {
 
   const all_products = await Products.find();
 
-  end_date = req.query.end_date;
+  let end_date = req.query.end_date;
 
   const finishedreceipt = await FinishedReceipts.find({ account_id: req.params.accountID, transaction_date: { $lte: new Date(end_date) } });
   const finishedissue = await FinishedIssue.find({ account_id: req.params.accountID, transaction_date: { $lte: new Date(end_date) } });
 
-  result = [];
+  let result = [];
   all_products.map((item) => {
     if (item.product_group == "Finished Cloth") {
       const pitem = find_finished_cloth_balance(finishedreceipt, finishedissue, item._id);
@@ -287,10 +286,10 @@ router.get("/GetJobPartyWiseBalance/:accountID", async (req, res) => {
 });
 
 function formatFinishedReceipt(item, account_name, products, change_user_name, change_date, create_user_name, create_date) {
-  trn = [];
-  transactions = item.transactions;
+  let trn = [];
+  let transactions = item.transactions;
   trn = transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
+    let product_name = findProductName(products, tm.product_id);
     return { product_id: tm.product_id, product_name, qty: tm.qty, pcs: tm.pcs, rate: tm.rate, value: tm.value };
   });
 
