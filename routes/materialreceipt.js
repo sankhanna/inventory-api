@@ -8,7 +8,7 @@ const Products = require("../models/Product");
 const findProductName = require("../services/findProductName");
 const mongoose = require("mongoose");
 
-function validation_schema() {
+function validationSchemaMaterialReceipt() {
   const transaction = Joi.object().keys({
     row_record_id: Joi.objectId().optional(),
     product_id: Joi.objectId().required(),
@@ -50,10 +50,10 @@ router.get("/", async (req, res) => {
   const materialreceipt = await MaterialReceipts.aggregate(pipeLine);
 
   const records = materialreceipt.map((item) => {
-    workshop_name = item.workshop?.name || "";
-    account_name = item.account?.account_name || "";
-    create_user_name = item.createUser?.complete_name || "";
-    change_user_name = item.changeUser?.complete_name || "";
+    const workshop_name = item.workshop?.name || "";
+    const account_name = item.account?.account_name || "";
+    const create_user_name = item.createUser?.complete_name || "";
+    const change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatMaterialReceiptRow(item, workshop_name, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -151,7 +151,7 @@ router.get("/PendingMaterialReceipt/:productID/:wareHouse", async (req, res) => 
 });
 
 router.post("/", async (req, res) => {
-  const schema = validation_schema();
+  const schema = validationSchemaMaterialReceipt();
 
   const result = schema.validate(req.body);
   if (result.error != null) {
@@ -171,9 +171,9 @@ router.post("/", async (req, res) => {
       change_user_id: req.headers.user_id,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
-    xtransactions = transactions.map((item) => {
+    
+    let transactions = result.value.transactions;
+    const xtransactions = transactions.map((item) => {
       return { product_id: item.product_id, qty: item.qty, short: item.short, nett_qty: item.nett_qty, rate: item.rate, value: item.value, batch_no: item.batch_no };
     });
     materialreceipt.transactions = xtransactions;
@@ -187,15 +187,15 @@ router.post("/", async (req, res) => {
     materialreceipt.account_id = result.value.account_id;
     materialreceipt.workshop_id = result.value.workshop_id;
 
-    transactions = result.value.transactions;
+    let transactions = result.value.transactions;
     transactions.map((item) => {
       if (item.row_record_id == undefined) {
         materialreceipt.transactions.push({ product_id: item.product_id, qty: item.qty, short: item.short, nett_qty: item.nett_qty, rate: item.rate, value: item.value, batch_no: item.batch_no });
       }
     });
 
-    for (counter = 0; counter < materialreceipt.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < materialreceipt.transactions.length; counter++) {
+      let transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(materialreceipt.transactions[counter]._id)) {
@@ -226,19 +226,17 @@ router.get("/CheckMaterialReceiptIssue", async (req, res) => {
   const materialreceipt = await MaterialReceipts.find({ workshop_id: 10 });
   const materialissue = await MaterialIssue.find();
 
-  all_records = [];
-  materialreceipt.map((item) => {
-    transactions = item.transactions;
+  const all_records = materialreceipt.map((item) => {
+    let transactions = item.transactions;
     transactions.map((itm) => {
       all_records.push({ _id: itm._id, product_id: itm.product_id, transaction_date: item.transaction_date, batch_no: itm.batch_no, nett_qty: itm.nett_qty, already_issued: 0, balance: itm.nett_qty, value: itm.value });
     });
   });
 
-  records = [];
-  records = all_records.map((item) => {
-    total_issued = 0;
+  const records = all_records.map((item) => {
+    let total_issued = 0;
     materialissue.map((ite) => {
-      transactions = ite.transactions;
+      const transactions = ite.transactions;
       transactions.map((itm) => {
         if (JSON.stringify(itm.material_receipt_ref_id) == JSON.stringify(item._id)) {
           total_issued += itm.nett_qty;
@@ -261,10 +259,9 @@ router.get("/CheckMaterialReceiptIssue", async (req, res) => {
 });
 
 function formatMaterialReceiptRow(item, workshop_name, account_name, products, change_user_name, change_date, create_user_name, create_date) {
-  trn = [];
-  transactions = item.transactions;
-  trn = transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
+  let transactions = item.transactions;
+  const trn = transactions.map((tm) => {
+    const product_name = findProductName(products, tm.product_id);
     return { product_id: tm.product_id, product_name, qty: tm.qty, short: tm.short, nett_qty: tm.nett_qty, value: tm.value };
   });
 

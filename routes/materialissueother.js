@@ -27,9 +27,9 @@ function validation_schema() {
 }
 
 router.get("/", async (req, res) => {
-  start_date = req.query.start_date;
-  end_date = req.query.end_date;
-  filter_workshop_id = req.query.filter_workshop_id;
+  let start_date = req.query.start_date;
+  let end_date = req.query.end_date;
+  let filter_workshop_id = req.query.filter_workshop_id;
 
   const workshops = Loadworkshops();
   const filters = { transaction_date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
@@ -67,11 +67,11 @@ router.get("/", async (req, res) => {
     }
 
     if (process_record) {
-      workshop_name = findWorkshopName(workshops, item.workshop_id);
-      to_workshop_name = findWorkshopName(workshops, item.to_workshop_id);
+      let workshop_name = findWorkshopName(workshops, item.workshop_id);
+      let to_workshop_name = findWorkshopName(workshops, item.to_workshop_id);
 
-      create_user_name = item.createUser?.complete_name || "";
-      change_user_name = item.changeUser?.complete_name || "";
+      let create_user_name = item.createUser?.complete_name || "";
+      let change_user_name = item.changeUser?.complete_name || "";
 
       const nitem = formatMaterialIssueOtherRow(item, workshop_name, to_workshop_name, change_user_name, item.change_date, create_user_name, item.create_date);
 
@@ -112,9 +112,8 @@ router.post("/", async (req, res) => {
       change_user_id: req.headers.user_id,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
-    xtransactions = transactions.map((item) => {
+    let transactions = result.value.transactions;
+    const xtransactions = transactions.map((item) => {
       return { product_id: item.product_id, qty: item.qty, rate: item.rate, value: item.value };
     });
     materialissueother.transactions = xtransactions;
@@ -135,8 +134,8 @@ router.post("/", async (req, res) => {
       }
     });
 
-    for (counter = 0; counter < materialissueother.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < materialissueother.transactions.length; counter++) {
+      let transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(materialissueother.transactions[counter]._id)) {
