@@ -56,11 +56,11 @@ router.get("/", async (req, res) => {
 
   let records = [];
   records = materialissue.map((item) => {
-    workshop_name = item.workshop?.name || "";
-    to_workshop_name = item.toworkshop?.name || "";
-    account_name = item.account?.account_name || "";
-    create_user_name = item.createUser?.complete_name || "";
-    change_user_name = item.changeUser?.complete_name || "";
+    let workshop_name = item.workshop?.name || "";
+    let to_workshop_name = item.toworkshop?.name || "";
+    let account_name = item.account?.account_name || "";
+    let create_user_name = item.createUser?.complete_name || "";
+    let change_user_name = item.changeUser?.complete_name || "";
 
     const nitem = formatMaterialIssueRow(item, workshop_name, to_workshop_name, account_name, products, change_user_name, item.change_date, create_user_name, item.create_date);
     return nitem;
@@ -95,7 +95,7 @@ router.post("/", async (req, res) => {
     return res.status(BADREQUEST).send(addMarkup(0, "Source and destination workshop cannot be same.", {}));
   }
 
-  error_found = false;
+  let error_found = false;
   result.value.transactions.map((item) => {
     if (formString(item.material_receipt_ref_str) == "" && formString(item.material_receipt_ref_id) == "" && result.value.workshop_id == "10") {
       error_found = true;
@@ -119,8 +119,8 @@ router.post("/", async (req, res) => {
       change_user_id: req.headers.user_id,
     });
 
-    xtransactions = [];
-    transactions = result.value.transactions;
+    let xtransactions = [];
+    let transactions = result.value.transactions;
     xtransactions = transactions.map((item) => {
       return {
         material_receipt_ref_id: item.material_receipt_ref_id,
@@ -147,7 +147,7 @@ router.post("/", async (req, res) => {
     materialissue.workshop_id = result.value.workshop_id;
     materialissue.to_workshop_id = result.value.to_workshop_id;
 
-    transactions = result.value.transactions;
+    let transactions = result.value.transactions;
     transactions.map((item) => {
       if (item.row_record_id == undefined) {
         materialissue.transactions.push({
@@ -165,8 +165,8 @@ router.post("/", async (req, res) => {
       }
     });
 
-    for (counter = 0; counter < materialissue.transactions.length; counter++) {
-      transactions = result.value.transactions;
+    for (let counter = 0; counter < materialissue.transactions.length; counter++) {
+      let transactions = result.value.transactions;
       transactions.map((item) => {
         if (item.row_record_id != null) {
           if (JSON.stringify(item.row_record_id) == JSON.stringify(materialissue.transactions[counter]._id)) {
@@ -195,10 +195,9 @@ router.post("/", async (req, res) => {
 });
 
 function formatMaterialIssueRow(item, workshop_name, to_workshop_name, account_name, products, change_user_name, change_date, create_user_name, create_date) {
-  trn = [];
-  transactions = item.transactions;
-  trn = transactions.map((tm) => {
-    product_name = findProductName(products, tm.product_id);
+  let transactions = item.transactions;
+  const trn = transactions.map((tm) => {
+    let product_name = findProductName(products, tm.product_id);
     return { material_receipt_ref_id: tm.material_receipt_ref_id, product_id: tm.product_id, product_name, pcs: tm.pcs, qty: tm.qty, short: tm.short, nett_qty: tm.nett_qty, value: tm.value };
   });
 
