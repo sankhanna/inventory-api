@@ -24,7 +24,7 @@ async function registerDevice(dev_id) {
 }
 
 function generate_device_code(len) {
-  charSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let charSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   var randomString = "";
   for (var i = 0; i < len; i++) {
     var randomPoz = Math.floor(Math.random() * charSet.length);
