@@ -3,7 +3,7 @@ const router = express.Router();
 const MaterialIssue = require("../models/MaterialIssue");
 
 router.get("/", async (req, res) => {
-  main_search = req.query.main_search;
+  let main_search = req.query.main_search;
 
   const filters = { "transactions.batch_no": main_search };
 
@@ -52,11 +52,11 @@ router.get("/", async (req, res) => {
   const materialissue = await MaterialIssue.aggregate(pipeLine);
 
   const records = materialissue.map((itm) => {
-    workshop_name = itm.workshop?.name || "";
-    to_workshop_name = itm.toworkshop?.name || "";
-    account_name = itm.account?.account_name || "";
-    create_user_name = itm.createUser?.complete_name || "";
-    change_user_name = itm.changeUser?.complete_name || "";
+    let workshop_name = itm.workshop?.name || "";
+    let to_workshop_name = itm.toworkshop?.name || "";
+    let account_name = itm.account?.account_name || "";
+    let create_user_name = itm.createUser?.complete_name || "";
+    let change_user_name = itm.changeUser?.complete_name || "";
 
     return {
       _id: itm._id,
