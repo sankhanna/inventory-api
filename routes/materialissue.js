@@ -49,7 +49,7 @@ router.get("/", async (req, res) => {
     { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
     { $project: { product_info: 0 } },
-    { $sort: { transaction_date: 1 } },
+    { $sort: { transaction_date: -1 } },
   ];
 
   const materialissue = await MaterialIssue.aggregate(pipeLine);

@@ -44,7 +44,7 @@ router.get("/", async (req, res) => {
     { $unwind: { path: "$changeUser", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$createUser", preserveNullAndEmptyArrays: true } },
     { $project: { product_info: 0 } },
-    { $sort: { _id: 1 } },
+    { $sort: { _id: -1 } },
   ];
 
   const materialreceipt = await MaterialReceipts.aggregate(pipeLine);
