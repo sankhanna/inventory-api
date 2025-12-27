@@ -37,7 +37,11 @@ function validation_schema() {
 router.get("/", async (req, res) => {
   const products = await Products.find();
 
+  const startDate = req.query.startDate || "01-Jan-1970";
+  const endDate = req.query.endDate || "31-Dec-2100";
+
   const pipeLine = [
+    { $match: { transaction_date: { $gte: new Date(startDate), $lte: new Date(endDate) } } },
     { $lookup: { from: "accounts", localField: "account_id", foreignField: "_id", as: "account" } },
     { $lookup: { from: "workshops", localField: "workshop_id", foreignField: "_id", as: "workshop" } },
     { $lookup: { from: "workshops", localField: "to_workshop_id", foreignField: "_id", as: "toworkshop" } },
