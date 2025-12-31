@@ -248,7 +248,7 @@ router.get("/transitPurchase", async (req, res) => {
         "changeUser.complete_name": 1,
       },
     },
-    { $sort: { dispatch_date: 1 } },
+    { $sort: { dispatched_date: 1 } },
   ];
 
   let purchases = await Purchases.aggregate(pipeline);
