@@ -24,6 +24,9 @@ function productionWorkshops() {
     { _id: "220", name: "Paper Roll", consumption_location: "0" },
     { _id: "230", name: "Table", consumption_location: "0" },
     { _id: "240", name: "CBR", consumption_location: "0" },
+    { _id: "250", name: "Coating", consumption_location: "0" },
+    { _id: "260", name: "Caustic lye", consumption_location: "0" },
+    { _id: "270", name: "Debit Note", consumption_location: "0" },
   ];
   return list;
 }
